@@ -6,6 +6,7 @@ import org.keycloak.admin.client.KeycloakBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 
 @Configuration
 class KeycloakConfig {
@@ -34,5 +35,10 @@ class KeycloakConfig {
     @Bean
     public KeycloakUserDetailsRepository keycloakUserDetailsRepository(Keycloak keycloak) {
         return new KeycloakUserDetailsRepository(keycloak, realm);
+    }
+
+    @Bean
+    public GrantedAuthoritiesMapper grantedAuthoritiesMapper() {
+        return new KeycloakGrantedAuthoritiesMapper();
     }
 }
