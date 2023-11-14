@@ -6,6 +6,9 @@ import dev.hilla.crud.ListService;
 import dev.hilla.crud.filter.Filter;
 import jakarta.annotation.security.PermitAll;
 import org.springframework.data.domain.Pageable;
+import org.vaadin.referenceapp.workhours.adapter.hilla.reference.ContractReference;
+import org.vaadin.referenceapp.workhours.adapter.hilla.reference.HourCategoryReference;
+import org.vaadin.referenceapp.workhours.adapter.hilla.reference.ProjectReference;
 import org.vaadin.referenceapp.workhours.domain.model.*;
 
 import java.time.Duration;

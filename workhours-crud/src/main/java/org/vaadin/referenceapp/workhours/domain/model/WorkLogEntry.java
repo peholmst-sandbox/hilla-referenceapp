@@ -9,6 +9,11 @@ import java.time.LocalTime;
 @Entity
 @Table(name = "work_log_entries")
 public class WorkLogEntry extends BaseAuditedEntity<Long> {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     @JoinColumn(name = "project_id", nullable = false)
     @ManyToOne(optional = false)
     private Project project;
@@ -32,6 +37,11 @@ public class WorkLogEntry extends BaseAuditedEntity<Long> {
 
     @Column(name = "description")
     private String description;
+
+    @Override
+    public Long getId() {
+        return id;
+    }
 
     public Project getProject() {
         return project;

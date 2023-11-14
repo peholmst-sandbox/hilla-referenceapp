@@ -1,4 +1,4 @@
-package org.vaadin.referenceapp.workhours.adapter.hilla.worklog;
+package org.vaadin.referenceapp.workhours.adapter.hilla.reference;
 
 import org.vaadin.referenceapp.workhours.domain.model.Project;
 
@@ -7,7 +7,7 @@ public record ProjectReference(
         String name
 ) {
 
-    static ProjectReference fromEntity(Project entity) {
+    public static ProjectReference fromEntity(Project entity) {
         return new ProjectReference(entity.nullSafeId(), entity.getName());
     }
 }

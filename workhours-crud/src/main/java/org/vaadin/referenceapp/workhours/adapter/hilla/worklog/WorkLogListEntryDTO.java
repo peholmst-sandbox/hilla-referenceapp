@@ -2,6 +2,9 @@ package org.vaadin.referenceapp.workhours.adapter.hilla.worklog;
 
 
 import dev.hilla.Nullable;
+import org.vaadin.referenceapp.workhours.adapter.hilla.reference.ContractReference;
+import org.vaadin.referenceapp.workhours.adapter.hilla.reference.HourCategoryReference;
+import org.vaadin.referenceapp.workhours.adapter.hilla.reference.ProjectReference;
 import org.vaadin.referenceapp.workhours.domain.model.WorkLogEntry;
 
 import java.time.LocalDate;

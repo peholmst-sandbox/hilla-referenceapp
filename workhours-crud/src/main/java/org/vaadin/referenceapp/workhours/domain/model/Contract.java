@@ -9,6 +9,10 @@ import java.util.Set;
 @Table(name = "contracts")
 public class Contract extends BaseEntity<Long> {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     @JoinColumn(name = "project_id", nullable = false)
     @ManyToOne(optional = false)
     private Project project;
@@ -21,6 +25,11 @@ public class Contract extends BaseEntity<Long> {
             inverseJoinColumns = @JoinColumn(name = "hour_category_id", nullable = false))
     @ManyToMany
     private Set<HourCategory> allowedHourCategories;
+
+    @Override
+    public Long getId() {
+        return id;
+    }
 
     public Project getProject() {
         return project;
