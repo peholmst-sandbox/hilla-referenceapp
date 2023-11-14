@@ -8,9 +8,9 @@ import WorkLogEntryDrawer from "Frontend/views/worklog/WorkLogEntryDrawer";
 import {useEffect, useState} from "react";
 import {useErrorHandler} from "Frontend/util/ErrorHandler";
 import ProjectReference
-    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/ProjectReference";
+    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/ProjectReference";
 import ContractReference
-    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/ContractReference";
+    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/ContractReference";
 import {WorkLog} from "Frontend/generated/endpoints";
 import WorkLogListEntryDTOModel
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/WorkLogListEntryDTOModel";

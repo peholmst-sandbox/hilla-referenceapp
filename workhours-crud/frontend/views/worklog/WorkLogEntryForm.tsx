@@ -14,11 +14,11 @@ import {formatDuration} from "Frontend/i18n/DurationFormatter";
 import WorkLogEntryFormDTOModel
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/WorkLogEntryFormDTOModel";
 import ProjectReference
-    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/ProjectReference";
+    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/ProjectReference";
 import ContractReference
-    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/ContractReference";
+    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/ContractReference";
 import HourCategoryReference
-    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/HourCategoryReference";
+    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/HourCategoryReference";
 import {WorkLog} from "Frontend/generated/endpoints";
 
 interface TimeEntryFormProps {
