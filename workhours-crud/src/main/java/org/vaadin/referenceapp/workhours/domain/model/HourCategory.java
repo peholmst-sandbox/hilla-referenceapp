@@ -1,11 +1,11 @@
 package org.vaadin.referenceapp.workhours.domain.model;
 
 import jakarta.persistence.*;
-import org.vaadin.referenceapp.workhours.domain.base.BaseEntity;
+import org.vaadin.referenceapp.workhours.domain.base.BaseAuditedEntity;
 
 @Entity
 @Table(name = "hour_categories")
-public class HourCategory extends BaseEntity<Long> {
+public class HourCategory extends BaseAuditedEntity<Long> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

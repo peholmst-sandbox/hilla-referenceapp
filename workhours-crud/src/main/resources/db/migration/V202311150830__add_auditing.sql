@@ -1,0 +1,17 @@
+ALTER TABLE projects
+    ADD COLUMN created_on  TIMESTAMP WITH TIME ZONE,
+    ADD COLUMN created_by  VARCHAR(255),
+    ADD COLUMN modified_on TIMESTAMP WITH TIME ZONE,
+    ADD COLUMN modified_by VARCHAR(255);
+
+ALTER TABLE contracts
+    ADD COLUMN created_on  TIMESTAMP WITH TIME ZONE,
+    ADD COLUMN created_by  VARCHAR(255),
+    ADD COLUMN modified_on TIMESTAMP WITH TIME ZONE,
+    ADD COLUMN modified_by VARCHAR(255);
+
+ALTER TABLE hour_categories
+    ADD COLUMN created_on  TIMESTAMP WITH TIME ZONE,
+    ADD COLUMN created_by  VARCHAR(255),
+    ADD COLUMN modified_on TIMESTAMP WITH TIME ZONE,
+    ADD COLUMN modified_by VARCHAR(255);
