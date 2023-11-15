@@ -17,7 +17,7 @@ public record HourCategoryDTO(
 
     public HourCategory toEntity(Function<Long, Optional<HourCategory>> entityLookup) {
         var entity = Optional.ofNullable(id()).flatMap(entityLookup).orElseGet(HourCategory::new);
-        entity.setName(name);
+        entity.setName(name());
         return entity;
     }
 }

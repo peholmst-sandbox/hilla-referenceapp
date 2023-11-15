@@ -8,6 +8,7 @@ import ContractAdminView from "Frontend/views/admin/ContractAdminView";
 import HourCategoryAdminView from "Frontend/views/admin/HourCategoryAdminView";
 
 export default function AdminView() {
+    console.debug("Rendering AdminView");
     return (<>
         <TabSheet className={"h-full w-full overflow-hidden"}>
             <Tabs slot={"tabs"}>
@@ -15,8 +16,8 @@ export default function AdminView() {
                 <Tab id={"contracts-tab"}>Contracts</Tab>
                 <Tab id={"hour-categories-tab"}>Hour categories</Tab>
             </Tabs>
-            <div className={"h-full"} {...{tab: "projects-tab"}}><ProjectAdminView/></div>
-            <div className={"h-full"} {...{tab: "contracts-tab"}}><ContractAdminView/></div>
+            <div className={"h-full w-full overflow-hidden"} {...{tab: "projects-tab"}}><ProjectAdminView/></div>
+            <div className={"h-full w-full overflow-hidden"} {...{tab: "contracts-tab"}}><ContractAdminView/></div>
             <div className={"h-full w-full overflow-hidden"} {...{tab: "hour-categories-tab"}}><HourCategoryAdminView/>
             </div>
         </TabSheet>

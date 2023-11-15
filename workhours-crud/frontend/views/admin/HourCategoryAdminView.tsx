@@ -9,6 +9,8 @@ import OnlineOnly from "Frontend/components/OnlineOnly";
 import ErrorNotification from "Frontend/components/ErrorNotification";
 
 export default function HourCategoryAdminView() {
+    console.debug("Rendering HourCategoryAdminView");
+
     const QUERY_KEY = "hour-category-admin-view";
     const queryOptions = {
         queryKey: QUERY_KEY,

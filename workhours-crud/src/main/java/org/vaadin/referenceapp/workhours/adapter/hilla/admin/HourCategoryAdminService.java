@@ -16,12 +16,12 @@ class HourCategoryAdminService {
         this.hourCategoryRepository = hourCategoryRepository;
     }
 
-    public List<HourCategoryDTO> findAll() {
+    public List<HourCategoryDTO> findAll() { // TODO Add pagination
         return hourCategoryRepository.findAllWithUpperLimit().map(HourCategoryDTO::fromEntity).toList();
     }
 
     public HourCategoryDTO save(HourCategoryDTO dto) {
-        if ("fail".equals(dto.name())) {
+        if ("fail".equals(dto.name())) { // TODO Remove this
             throw new UnsupportedOperationException("fail");
         }
         return HourCategoryDTO.fromEntity(hourCategoryRepository.saveAndFlush(dto.toEntity(hourCategoryRepository::findById)));
