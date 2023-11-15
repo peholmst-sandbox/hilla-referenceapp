@@ -3,7 +3,7 @@ import {ComboBox} from "@hilla/react-components/ComboBox";
 import {TextArea} from "@hilla/react-components/TextArea";
 import {DatePicker} from "@hilla/react-components/DatePicker";
 import {TimePicker} from "@hilla/react-components/TimePicker";
-import {useFormPart, UseFormResult} from "@hilla/react-form";
+import {useFormPart, UseFormPartResult, UseFormResult} from "@hilla/react-form";
 import {useEffect, useState} from "react";
 import {useErrorHandler} from "Frontend/util/ErrorHandler";
 import {NotBlank, NotNull} from "@hilla/form";
@@ -13,29 +13,49 @@ import {HorizontalLayout} from "@hilla/react-components/HorizontalLayout";
 import {formatDuration} from "Frontend/i18n/DurationFormatter";
 import WorkLogEntryFormDTOModel
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/WorkLogEntryFormDTOModel";
-import ProjectReference
-    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/ProjectReference";
-import ContractReference
-    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/ContractReference";
-import HourCategoryReference
-    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/HourCategoryReference";
-import {WorkLog} from "Frontend/generated/endpoints";
+import {ReferenceLookupService, WorkLogService} from "Frontend/generated/endpoints";
+import {useParameterizedQuery, useQuery} from "Frontend/util/Service";
+import ErrorNotification from "Frontend/components/ErrorNotification";
 
 interface TimeEntryFormProps {
     form: UseFormResult<WorkLogEntryFormDTOModel>;
 }
 
+function clearValueIfNotInList<T>(field: UseFormPartResult<any>, expectedValue: T | undefined, list: T[] | undefined, idExtractor: (item: T) => any) {
+    if (expectedValue && list) {
+        const expectedId = idExtractor(expectedValue);
+        if (!list.find((item) => idExtractor(item) === expectedId)) {
+            field.setValue(undefined);
+        }
+    }
+}
+
 export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
+    console.debug("Rendering WorkLogEntryForm");
     const errorHandler = useErrorHandler();
-    const [projects, setProjects] = useState<ProjectReference[]>([]);
-    const [contracts, setContracts] = useState<ContractReference[]>([]);
-    const [categories, setCategories] = useState<HourCategoryReference[]>([]);
+    const {model, value, field} = form;
+
+    const projects = useQuery({
+        queryKey: "WorkLogEntryFormProjects",
+        queryFunction: ReferenceLookupService.findProjects
+    });
+    const contracts = useParameterizedQuery({
+        queryKey: "WorkLogEntryFormContracts",
+        queryFunction: ReferenceLookupService.findContractsByProject,
+        parameter: value.project,
+        defaultResult: []
+    });
+    const hourCategories = useParameterizedQuery({
+        queryKey: "WorkLogEntryFormHourCategories",
+        queryFunction: ReferenceLookupService.findHourCategoriesByContract,
+        parameter: value.contract,
+        defaultResult: []
+    });
+
     const [contractHelper, setContractHelper] = useState("");
-    const [categoryHelper, setCategoryHelper] = useState("");
+    const [hourCategoryHelper, setHourCategoryHelper] = useState("");
     const [endTimeHelper, setEndTimeHelper] = useState("");
     const [durationHelper, setDurationHelper] = useState("");
-
-    const {model, value, field} = form;
 
     const responsiveSteps = [
         {minWidth: '0', columns: 1},
@@ -43,12 +63,12 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
         {minWidth: '500px', columns: 4},
     ];
 
-    const projectField = useFormPart(model.projectId);
-    const contractField = useFormPart(model.contractId);
+    const projectField = useFormPart(model.project);
+    const contractField = useFormPart(model.contract);
     const dateField = useFormPart(model.date);
     const startTimeField = useFormPart(model.startTime);
     const endTimeField = useFormPart(model.endTime);
-    const hourCategoryField = useFormPart(model.hourCategoryId);
+    const hourCategoryField = useFormPart(model.hourCategory);
 
     useEffect(() => {
         projectField.addValidator(new NotNull({message: "Please select a project."}));
@@ -57,61 +77,28 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
         startTimeField.addValidator(new NotBlank({message: "Please enter a start time."}));
         endTimeField.addValidator(new NotBlank({message: "Please enter an end time."}));
         hourCategoryField.addValidator(new NotNull({message: "Please select an hour category."}));
-
-        WorkLog.findProjects()
-            .then((data) => setProjects(data))
-            .catch((error) => errorHandler.handleTechnicalError(error, "An error occurred while retrieving projects."));
     }, []);
 
-    // Populate the contract combo box when selecting a project
+    useEffect(() => {
+        setContractHelper(value.project ? "" : "You have to select a project before you can select a contract.");
+    }, [value.project]);
 
     useEffect(() => {
-        if (value.projectId != null) {
-            WorkLog.findContractsByProject(value.projectId)
-                .then((data) => setContracts(data))
-                .catch((error) => errorHandler.handleTechnicalError(error, "An error occurred while retrieving contracts."));
-            setContractHelper("");
-        } else {
-            setContracts([]);
-            setContractHelper("You have to select a project before you can select a contract.");
-        }
-    }, [value.projectId]);
-
-    // Populate the hour category combo box when selecting a contract
+        setHourCategoryHelper(value.contract ? "" : "You have to select a contract before you can select an hour category.");
+    }, [value.contract]);
 
     useEffect(() => {
-        if (value.contractId != null) {
-            WorkLog.findHourCategoriesByContract(value.contractId)
-                .then((data) => setCategories(data))
-                .catch((error) => errorHandler.handleTechnicalError(error, "An error occurred while retrieving hour categories."));
-            setCategoryHelper("");
-        } else {
-            setCategories([]);
-            setCategoryHelper("You have to select a contract before you can select an hour category.");
-        }
-    }, [value.contractId]);
-
-    // Clear the combo boxes if their values are not among the items (this is something that IMO should be handled by the combo box automatically).
+        clearValueIfNotInList(projectField, value.project, projects.data, item => item.id);
+    }, [projects.data]);
 
     useEffect(() => {
-        if (value.projectId != null && !projects.find((p) => p.id === value.projectId)) {
-            projectField.setValue(undefined);
-        }
-    }, [projects]);
+        clearValueIfNotInList(contractField, value.contract, contracts.data, item => item.id);
+    }, [contracts.data]);
 
     useEffect(() => {
-        if (value.contractId != null && !contracts.find((c) => c.id === value.contractId)) {
-            contractField.setValue(undefined);
-        }
-    }, [contracts]);
+        clearValueIfNotInList(hourCategoryField, value.hourCategory, hourCategories.data, item => item.id);
+    }, [hourCategories.data]);
 
-    useEffect(() => {
-        if (value.hourCategoryId != null && !categories.find((c) => c.id === value.hourCategoryId)) {
-            hourCategoryField.setValue(undefined);
-        }
-    }, [categories]);
-
-    // Update helper texts when selecting times
     useEffect(() => {
         if (value.date && value.startTime && value.endTime) {
             if (!LocalTime.parseString(value.startTime).isBefore(LocalTime.parseString(value.endTime))) {
@@ -120,7 +107,7 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
                 setEndTimeHelper("");
             }
             // We're asking the server for the duration to be able to account for daylight savings time changes
-            WorkLog.calculateDurationInSecondsBetween(value.date, value.startTime, value.endTime)
+            WorkLogService.calculateDurationInSecondsBetween(value.date, value.startTime, value.endTime) // TODO Create a suitable hook for this use case in Service.tsx
                 .then((durationInSeconds) => {
                     const duration = Duration.ofSeconds(durationInSeconds);
                     setDurationHelper("This entry contains " + formatDuration(duration) + " of work.");
@@ -136,20 +123,25 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
         <FormLayout responsiveSteps={responsiveSteps}>
             <ComboBox
                 {...{colspan: 2}}
-                {...field(model.projectId)}
+                {...field(model.project)}
                 label={"Project"}
-                items={projects}
-                itemLabelPath={"name"}
-                itemValuePath={"id"}/>
-            <ComboBox
-                {...{colspan: 2}}
-                {...field(model.contractId)}
-                label={"Contract"}
-                helperText={contractHelper}
-                items={contracts}
+                items={projects.data}
                 itemLabelPath={"name"}
                 itemValuePath={"id"}
+                itemIdPath={"id"}/>
+            <ErrorNotification message={"Error loading projects"} opened={projects.isError} retry={projects.refresh}/>
+            <ComboBox
+                {...{colspan: 2}}
+                {...field(model.contract)}
+                label={"Contract"}
+                helperText={contractHelper}
+                items={contracts.data}
+                itemLabelPath={"name"}
+                itemValuePath={"id"}
+                itemIdPath={"id"}
             />
+            <ErrorNotification message={"Error loading contracts"} opened={contracts.isError}
+                               retry={contracts.refresh}/>
             <DatePicker
                 {...{colspan: 2}}
                 {...field(model.date)}
@@ -170,12 +162,15 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
                 label={"Description"}/>
             <ComboBox
                 {...{colspan: 4}}
-                {...field(model.hourCategoryId)}
+                {...field(model.hourCategory)}
                 label={"Category"}
-                helperText={categoryHelper}
-                items={categories}
+                helperText={hourCategoryHelper}
+                items={hourCategories.data}
                 itemLabelPath={"name"}
-                itemValuePath={"id"}/>
+                itemValuePath={"id"}
+                itemIdPath={"id"}/>
+            <ErrorNotification message={"Error loading hour categories"} opened={hourCategories.isError}
+                               retry={hourCategories.refresh}/>
         </FormLayout>
     )
 }

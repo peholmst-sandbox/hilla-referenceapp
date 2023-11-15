@@ -143,6 +143,8 @@ export function ErrorHandlerProvider(props: PropsWithChildren) {
  * other types of I/O. This error handler should not be used for business errors, i.e. errors caused by the violation
  * of business rules (like different constraint violations). Those errors should be incorporated into the response
  * object coming from the server and handled accordingly inside the UI.
+ *
+ * @deprecated
  */
 export interface ErrorHandler {
 
@@ -168,6 +170,8 @@ export interface ErrorHandler {
 
 /**
  * Hook for retrieving the current {@link ErrorHandler}.
+ *
+ * @deprecated
  */
 export function useErrorHandler(): ErrorHandler {
     const dispatch = useContext(ErrorDispatchContext);

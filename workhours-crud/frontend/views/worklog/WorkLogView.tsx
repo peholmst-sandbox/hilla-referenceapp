@@ -5,34 +5,26 @@ import {Button} from "@hilla/react-components/Button.js";
 import {ComboBox} from "@hilla/react-components/ComboBox";
 import {DatePicker} from "@hilla/react-components/DatePicker";
 import WorkLogEntryDrawer from "Frontend/views/worklog/WorkLogEntryDrawer";
-import {useEffect, useState} from "react";
-import {useErrorHandler} from "Frontend/util/ErrorHandler";
+import {useState} from "react";
 import ProjectReference
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/ProjectReference";
 import ContractReference
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/ContractReference";
-import {WorkLog} from "Frontend/generated/endpoints";
 import WorkLogListEntryDTOModel
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/WorkLogListEntryDTOModel";
 import WorkLogListEntryDTO
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/WorkLogListEntryDTO";
 import WorkLogEntryFormDTO
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/WorkLogEntryFormDTO";
+import {WorkLogService} from "Frontend/generated/endpoints";
 
 export default function WorkLogView() {
-    const errorHandler = useErrorHandler();
     const [projects, setProjects] = useState<ProjectReference[]>([]);
     const [contracts, setContracts] = useState<ContractReference[]>([]);
     const [selection, setSelection] = useState<WorkLogListEntryDTO[]>([]);
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [drawerEntryId, setDrawerEntryId] = useState<number>();
     const [refreshTrigger, setRefreshTrigger] = useState(0);
-
-    useEffect(() => {
-        WorkLog.findProjects()
-            .then((data) => setProjects(data))
-            .catch((error) => errorHandler.handleTechnicalError(error, "An error occurred while retrieving projects."));
-    }, []); // TODO Populate other combo boxes as well
 
     // TODO Apply filters
 
@@ -91,7 +83,7 @@ export default function WorkLogView() {
                     <Button theme={"primary"} style={{flexGrow: 1}} onClick={addEntry}>Add</Button>
                 </HorizontalLayout>
                 <AutoGrid
-                    service={WorkLog}
+                    service={WorkLogService}
                     model={WorkLogListEntryDTOModel}
                     noHeaderFilters={true}
                     visibleColumns={["project", "contract", "date", "startTime", "endTime", "description", "hourCategory"]}
