@@ -3,6 +3,8 @@ package org.vaadin.referenceapp.workhours.domain.model;
 import jakarta.persistence.*;
 import org.vaadin.referenceapp.workhours.domain.base.BaseAuditedEntity;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -51,7 +53,7 @@ public class Contract extends BaseAuditedEntity<Long> {
         return allowedHourCategories;
     }
 
-    public void setAllowedHourCategories(Set<HourCategory> allowedHourCategories) {
-        this.allowedHourCategories = allowedHourCategories;
+    public void setAllowedHourCategories(Collection<HourCategory> allowedHourCategories) {
+        this.allowedHourCategories = new HashSet<>(allowedHourCategories);
     }
 }

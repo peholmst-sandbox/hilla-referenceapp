@@ -18,7 +18,7 @@ export default function ProjectAdminView() {
     const mutationOptions = {
         queryKeysToRefresh: [QUERY_KEY],
         mutationFunction: ProjectAdminService.save
-    }
+    };
 
     const query = useQuery(queryOptions);
     const mutation = useMutation(mutationOptions);

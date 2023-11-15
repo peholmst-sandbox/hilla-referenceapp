@@ -2,6 +2,7 @@ package org.vaadin.referenceapp.workhours.adapter.hilla.admin;
 
 import dev.hilla.BrowserCallable;
 import jakarta.annotation.security.RolesAllowed;
+import org.springframework.transaction.annotation.Transactional;
 import org.vaadin.referenceapp.workhours.domain.model.ProjectRepository;
 
 import java.util.List;
@@ -20,10 +21,11 @@ class ProjectAdminService {
         return projectRepository.findAllWithUpperLimit().map(ProjectDTO::fromEntity).toList();
     }
 
+    @Transactional
     public ProjectDTO save(ProjectDTO dto) {
         if ("fail".equals(dto.name())) { // TODO Remove this
             throw new UnsupportedOperationException("fail");
         }
-        return ProjectDTO.fromEntity(projectRepository.saveAndFlush(dto.toEntity(projectRepository::findById)));
+        return ProjectDTO.fromEntity(projectRepository.saveAndFlush(dto.toEntity(projectRepository::findAllById)));
     }
 }

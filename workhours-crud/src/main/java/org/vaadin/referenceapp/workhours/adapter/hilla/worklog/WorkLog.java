@@ -39,10 +39,12 @@ class WorkLog implements ListService<WorkLogListEntryDTO> {
         this.hourCategoryRepository = hourCategoryRepository;
     }
 
+    @Deprecated
     public List<ProjectReference> findProjects() {
         return projectRepository.findAll().stream().map(ProjectReference::fromEntity).toList();
     }
 
+    @Deprecated
     public List<ContractReference> findContractsByProject(long projectId) {
         return projectRepository.findById(projectId).stream()
                 .flatMap(project -> contractRepository.findByProject(project).stream())
@@ -50,6 +52,7 @@ class WorkLog implements ListService<WorkLogListEntryDTO> {
                 .toList();
     }
 
+    @Deprecated
     public List<HourCategoryReference> findHourCategoriesByContract(long contractId) {
         return contractRepository.findById(contractId).stream()
                 .flatMap(contract -> contract.getAllowedHourCategories().stream())

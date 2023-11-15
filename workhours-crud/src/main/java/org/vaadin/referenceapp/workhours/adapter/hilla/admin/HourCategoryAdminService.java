@@ -2,6 +2,7 @@ package org.vaadin.referenceapp.workhours.adapter.hilla.admin;
 
 import dev.hilla.BrowserCallable;
 import jakarta.annotation.security.RolesAllowed;
+import org.springframework.transaction.annotation.Transactional;
 import org.vaadin.referenceapp.workhours.domain.model.HourCategoryRepository;
 
 import java.util.List;
@@ -20,10 +21,11 @@ class HourCategoryAdminService {
         return hourCategoryRepository.findAllWithUpperLimit().map(HourCategoryDTO::fromEntity).toList();
     }
 
+    @Transactional
     public HourCategoryDTO save(HourCategoryDTO dto) {
         if ("fail".equals(dto.name())) { // TODO Remove this
             throw new UnsupportedOperationException("fail");
         }
-        return HourCategoryDTO.fromEntity(hourCategoryRepository.saveAndFlush(dto.toEntity(hourCategoryRepository::findById)));
+        return HourCategoryDTO.fromEntity(hourCategoryRepository.saveAndFlush(dto.toEntity(hourCategoryRepository::findAllById)));
     }
 }
