@@ -13,6 +13,9 @@ import OnlineOnly from "Frontend/components/OnlineOnly";
 import AuditingInformation from "Frontend/components/AuditingInformation";
 import {undefinedResultToNull, useMutation, useParameterizedQuery} from "Frontend/util/Service";
 import WarningMessage from "Frontend/components/WarningMessage";
+import {ProgressBar} from "@hilla/react-components/ProgressBar.js";
+import ErrorMessage from "Frontend/components/ErrorMessage";
+import ErrorNotification from "Frontend/components/ErrorNotification";
 
 interface WorkLogDrawerProps {
     className?: string;
@@ -60,22 +63,29 @@ export default function WorkLogEntryDrawer({className, workLogEntryId, onCancel,
     // TODO Prefill today's date and the current time
     // TODO Read-only support
     // TODO Prompt on unsaved changes
-    // TODO Loading and error management!
+    // TODO Save progress management
 
     return (
         <VerticalLayout className={className} theme={"padding spacing"}>
             <OnlineOnly fallback={<WarningMessage message={"You have to be online to add or edit work."}/>}>
-                <h1 className={"text-xl text-header"}>{isNew ? "Add Work" : "Edit Work"}</h1>
-                <WorkLogEntryForm form={form}></WorkLogEntryForm>
-                <AuditingInformation createdBy={form.value.createdBy}
-                                     createdDate={form.value.createdOn}
-                                     lastModifiedBy={form.value.modifiedBy}
-                                     lastModifiedDate={form.value.modifiedOn}/>
-                <HorizontalLayout theme={"spacing"}>
-                    <Button theme={"primary"} style={{flexGrow: 1}} onClick={form.submit}
-                            disabled={form.invalid}>{isNew ? "Add Work" : "Update Work"}</Button>
-                    <Button style={{flexGrow: 1}} onClick={onCancel}>Cancel</Button>
-                </HorizontalLayout>
+                {query.isLoading ? <ProgressBar indeterminate={true}/> : query.isSuccess ?
+                    <>
+                        <h1 className={"text-xl text-header"}>{isNew ? "Add Work" : "Edit Work"}</h1>
+                        <WorkLogEntryForm form={form}></WorkLogEntryForm>
+                        <AuditingInformation createdBy={form.value.createdBy}
+                                             createdDate={form.value.createdOn}
+                                             lastModifiedBy={form.value.modifiedBy}
+                                             lastModifiedDate={form.value.modifiedOn}/>
+                        <HorizontalLayout theme={"spacing"}>
+                            <Button theme={"primary"} style={{flexGrow: 1}} onClick={form.submit}
+                                    disabled={form.invalid}>{isNew ? "Add Work" : "Update Work"}</Button>
+                            <Button style={{flexGrow: 1}} onClick={onCancel}>Cancel</Button>
+                        </HorizontalLayout>
+                        <ErrorNotification message={"Error saving work log entry"}
+                                           opened={mutation.isError}
+                                           onClose={mutation.reset}/>
+                    </>
+                    : <ErrorMessage message={"Error loading work log entry"} retry={query.refresh}/>}
             </OnlineOnly>
         </VerticalLayout>
     );
