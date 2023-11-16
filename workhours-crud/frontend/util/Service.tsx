@@ -26,10 +26,19 @@ export type QueryOptions<T> = {
 }
 
 export function useQuery<T>(options: QueryOptions<T>): QueryResult<T> {
+    const TAG = "useQuery";
     const queryClient = useQueryClient_1();
+    const queryFn = () => {
+        console.debug(TAG, options.queryKey, "Invoking query function");
+        return options.queryFunction();
+    };
     const o = {
         queryKey: toQueryKey(options.queryKey),
-        queryFn: options.queryFunction
+        queryFn: queryFn
+    };
+    const refresh = async () => {
+        console.debug(TAG, options.queryKey, "Refreshing query");
+        await queryClient.refetchQueries(o);
     };
     const {data, isSuccess, isError, isLoading} = useQuery_1(o);
     return {
@@ -37,7 +46,7 @@ export function useQuery<T>(options: QueryOptions<T>): QueryResult<T> {
         isSuccess: isSuccess,
         isError: isError,
         isLoading: isLoading,
-        refresh: async () => await queryClient.refetchQueries(o)
+        refresh: refresh
     };
 }
 
@@ -49,10 +58,24 @@ export type ParameterizedQueryOptions<T, P> = {
 }
 
 export function useParameterizedQuery<T, P>(options: ParameterizedQueryOptions<T, P>): QueryResult<T> {
+    const TAG = "useParameterizedQuery";
     const queryClient = useQueryClient_1();
+    const queryFn = () => {
+        if (options.parameter !== undefined) {
+            console.debug(TAG, options.queryKey, "Invoking query function with parameter", options.parameter);
+            return options.queryFunction(options.parameter);
+        } else {
+            console.debug(TAG, options.queryKey, "Using default query result without invoking query function");
+            return Promise.resolve(options.defaultResult);
+        }
+    };
     const o = {
         queryKey: [...toQueryKey(options.queryKey), options.parameter],
-        queryFn: () => options.parameter !== undefined ? options.queryFunction(options.parameter) : Promise.resolve(options.defaultResult)
+        queryFn: queryFn
+    };
+    const refresh = async () => {
+        console.debug(TAG, options.queryKey, "Refreshing query");
+        await queryClient.refetchQueries(o);
     };
     const {data, isSuccess, isError, isLoading} = useQuery_1(o);
     return {
@@ -60,7 +83,7 @@ export function useParameterizedQuery<T, P>(options: ParameterizedQueryOptions<T
         isSuccess: isSuccess,
         isError: isError,
         isLoading: isLoading,
-        refresh: async () => await queryClient.refetchQueries(o)
+        refresh: refresh
     };
 }
 
@@ -82,35 +105,34 @@ export type MutationOptions<T> = {
 };
 
 export function useMutation<T>(options: MutationOptions<T>): MutationResult<T> {
+    const TAG = "useMutation";
     const queryClient = useQueryClient_1();
     const refresh = async () => {
-        console.debug("Refreshing queries");
         if (options.queryKeysToInvalidate) {
             for (const key of options.queryKeysToInvalidate) {
+                console.debug(TAG, "Invalidating query", key);
                 await queryClient.invalidateQueries({queryKey: toQueryKey(key)});
             }
         }
         if (options.queryKeysToRefresh) {
             for (const key of options.queryKeysToRefresh) {
+                console.debug(TAG, "Refreshing query", key);
                 await queryClient.refetchQueries({queryKey: toQueryKey(key)});
             }
         }
     };
     const cancelQueries = async () => {
-        console.debug("Canceling queries");
-        if (options.queryKeysToInvalidate) {
-            for (const key of options.queryKeysToInvalidate) {
-                await queryClient.cancelQueries({queryKey: toQueryKey(key)});
-            }
-        }
-        if (options.queryKeysToRefresh) {
-            for (const key of options.queryKeysToRefresh) {
-                await queryClient.cancelQueries({queryKey: toQueryKey(key)});
-            }
+        const queryKeysToCancel = [...options.queryKeysToInvalidate ?? [], ...options.queryKeysToRefresh ?? []];
+        for (const key of queryKeysToCancel) {
+            console.debug(TAG, "Canceling query", key);
+            await queryClient.cancelQueries({queryKey: toQueryKey(key)});
         }
     }
     const {isSuccess, isError, isPending, data, mutate, mutateAsync, reset} = useMutation_1({
-        mutationFn: options.mutationFunction,
+        mutationFn: (data: T) => {
+            console.debug(TAG, "Invoking mutation function with input", data);
+            return options.mutationFunction(data);
+        },
         onMutate: cancelQueries,
         onSettled: refresh,
         onSuccess: options.onSuccess
