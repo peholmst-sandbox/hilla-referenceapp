@@ -10,12 +10,11 @@ export interface RelativeTimeProps {
 
 export default function RelativeTime(props: RelativeTimeProps) {
     const d = new Date(props.date);
-    const [formattedDate, setFormattedDate] = useState(formatPastDate(d, props.i18n));
+    const [formattedDate, setFormattedDate] = useState("");
     useEffect(() => {
-        const interval = setInterval(() => {
-            setFormattedDate(formatPastDate(d, props.i18n));
-        }, 60000);
+        setFormattedDate(formatPastDate(d, props.i18n));
+        const interval = setInterval(() => setFormattedDate(formatPastDate(d, props.i18n)), 60000);
         return () => clearInterval(interval);
-    }, []);
+    }, [props.date, props.i18n]);
     return <span title={formatShortDateTime(d, props.i18n)}>{formattedDate}</span>;
 }
