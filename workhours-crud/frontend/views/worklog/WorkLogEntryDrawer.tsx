@@ -11,11 +11,12 @@ import WorkLogEntryFormDTOModel
 import {WorkLogService} from "Frontend/generated/endpoints";
 import OnlineOnly from "Frontend/components/OnlineOnly";
 import AuditingInformation from "Frontend/components/AuditingInformation";
-import {undefinedResultToNull, useMutation, useParameterizedQuery} from "Frontend/util/Service";
+import {useMutation, useQuery} from "Frontend/util/Service";
 import WarningMessage from "Frontend/components/WarningMessage";
 import {ProgressBar} from "@hilla/react-components/ProgressBar.js";
 import ErrorMessage from "Frontend/components/ErrorMessage";
 import ErrorNotification from "Frontend/components/ErrorNotification";
+import {undefinedToNull} from "Frontend/util/ServiceUtils";
 
 interface WorkLogDrawerProps {
     className?: string;
@@ -24,22 +25,16 @@ interface WorkLogDrawerProps {
     onSave?: (form: WorkLogEntryFormDTO) => void;
 }
 
-function negativeToUndefined(value: number | undefined): number | undefined {
-    return value !== undefined && value < 0 ? undefined : value;
-}
-
 export default function WorkLogEntryDrawer({className, workLogEntryId, onCancel, onSave}: WorkLogDrawerProps) {
-    console.debug("Rendering WorkLogEntryDrawer");
+    console.debug("Rendering WorkLogEntryDrawer (workLogEntryId=" + workLogEntryId + ")");
 
-    const QUERY_KEY = "work-log-entry-drawer";
-    const query = useParameterizedQuery({
+    const QUERY_KEY = ["WorkLogEntryDrawer", workLogEntryId];
+    const query = useQuery({
         queryKey: QUERY_KEY,
-        parameter: negativeToUndefined(workLogEntryId), // TODO This is so ugly!
-        queryFunction: undefinedResultToNull(WorkLogService.loadForm),
-        defaultResult: null
+        queryFunction: async () => workLogEntryId && workLogEntryId > 0 ? undefinedToNull(await WorkLogService.loadForm(workLogEntryId)) : null
     });
     const mutation = useMutation({
-        queryKeysToRefresh: ["work-log-view"],
+        queryKeysToInvalidate: [QUERY_KEY],
         mutationFunction: WorkLogService.saveForm,
         onSuccess: onSave
     });
@@ -54,7 +49,7 @@ export default function WorkLogEntryDrawer({className, workLogEntryId, onCancel,
             console.debug("Clearing form");
             form.clear();
         } else {
-            console.debug("Reading form");
+            console.debug("Reading form ", query.data);
             form.read(query.data);
         }
     }, [query.data]);

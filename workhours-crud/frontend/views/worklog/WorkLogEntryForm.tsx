@@ -5,7 +5,6 @@ import {DatePicker} from "@hilla/react-components/DatePicker";
 import {TimePicker} from "@hilla/react-components/TimePicker";
 import {useFormPart, UseFormPartResult, UseFormResult} from "@hilla/react-form";
 import {useEffect, useState} from "react";
-import {useErrorHandler} from "Frontend/util/ErrorHandler";
 import {NotBlank, NotNull} from "@hilla/form";
 import {LocalTime} from "Frontend/types/LocalTime";
 import {Duration} from "Frontend/types/Duration";
@@ -16,6 +15,10 @@ import WorkLogEntryFormDTOModel
 import {ReferenceLookupService, WorkLogService} from "Frontend/generated/endpoints";
 import {useParameterizedQuery, useQuery} from "Frontend/util/Service";
 import ErrorNotification from "Frontend/components/ErrorNotification";
+import ProjectReference
+    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/ProjectReference";
+import ContractReference
+    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/ContractReference";
 
 interface TimeEntryFormProps {
     form: UseFormResult<WorkLogEntryFormDTOModel>;
@@ -32,7 +35,6 @@ function clearValueIfNotInList<T>(field: UseFormPartResult<any>, expectedValue: 
 
 export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
     console.debug("Rendering WorkLogEntryForm");
-    const errorHandler = useErrorHandler();
     const {model, value, field} = form;
 
     const projects = useQuery({
@@ -41,21 +43,31 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
     });
     const contracts = useParameterizedQuery({
         queryKey: "WorkLogEntryFormContracts",
-        queryFunction: ReferenceLookupService.findContractsByProject,
-        parameter: value.project,
-        defaultResult: []
+        queryFunction: async (project?: ProjectReference) => project ? await ReferenceLookupService.findContractsByProject(project) : [],
+        params: [value.project]
     });
     const hourCategories = useParameterizedQuery({
         queryKey: "WorkLogEntryFormHourCategories",
-        queryFunction: ReferenceLookupService.findHourCategoriesByContract,
-        parameter: value.contract,
-        defaultResult: []
+        queryFunction: async (contract?: ContractReference) => contract ? await ReferenceLookupService.findHourCategoriesByContract(contract) : [],
+        params: [value.contract]
+    });
+    const durationHelper = useParameterizedQuery({
+        queryKey: "WorkLogEntryFormDurationHelper",
+        queryFunction: async (date?: string, startTime?: string, endTime?: string) => {
+            if (date && startTime && endTime) {
+                const durationInSeconds = await WorkLogService.calculateDurationInSecondsBetween(date, startTime, endTime);
+                const duration = Duration.ofSeconds(durationInSeconds);
+                return "This entry contains " + formatDuration(duration) + " of work.";
+            } else {
+                return "";
+            }
+        },
+        params: [value.date, value.startTime, value.endTime],
     });
 
     const [contractHelper, setContractHelper] = useState("");
     const [hourCategoryHelper, setHourCategoryHelper] = useState("");
     const [endTimeHelper, setEndTimeHelper] = useState("");
-    const [durationHelper, setDurationHelper] = useState("");
 
     const responsiveSteps = [
         {minWidth: '0', columns: 1},
@@ -100,24 +112,20 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
     }, [hourCategories.data]);
 
     useEffect(() => {
-        if (value.date && value.startTime && value.endTime) {
-            if (!LocalTime.parseString(value.startTime).isBefore(LocalTime.parseString(value.endTime))) {
-                setEndTimeHelper("The end time is on the next day.");
-            } else {
-                setEndTimeHelper("");
-            }
-            // We're asking the server for the duration to be able to account for daylight savings time changes
-            WorkLogService.calculateDurationInSecondsBetween(value.date, value.startTime, value.endTime) // TODO Create a suitable hook for this use case in Service.tsx
-                .then((durationInSeconds) => {
-                    const duration = Duration.ofSeconds(durationInSeconds);
-                    setDurationHelper("This entry contains " + formatDuration(duration) + " of work.");
-                })
-                .catch((error) => errorHandler.handleTechnicalError(error, "An error occurred while calculating the work duration"));
+        if (value.startTime && value.endTime && !LocalTime.parseString(value.startTime).isBefore(LocalTime.parseString(value.endTime))) {
+            setEndTimeHelper("The end time is on the next day.");
         } else {
-            setDurationHelper("");
             setEndTimeHelper("");
         }
-    }, [value.date, value.startTime, value.endTime]);
+    }, [value.startTime, value.endTime]);
+
+    console.log("Form value", value);
+    console.log("Project field value", projectField.value);
+    console.log("Contract field value", contractField.value);
+    console.log("Date field value", dateField.value);
+    console.log("Start time field value", startTimeField.value);
+    console.log("End time field value", endTimeField.value);
+    console.log("Hour category field value", hourCategoryField.value);
 
     return (
         <FormLayout responsiveSteps={responsiveSteps}>
@@ -129,7 +137,9 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
                 itemLabelPath={"name"}
                 itemValuePath={"id"}
                 itemIdPath={"id"}/>
-            <ErrorNotification message={"Error loading projects"} opened={projects.isError} retry={projects.refresh}/>
+            <ErrorNotification message={"Error loading projects"}
+                               opened={projects.isError}
+                               retry={projects.refresh}/>
             <ComboBox
                 {...{colspan: 2}}
                 {...field(model.contract)}
@@ -140,7 +150,8 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
                 itemValuePath={"id"}
                 itemIdPath={"id"}
             />
-            <ErrorNotification message={"Error loading contracts"} opened={contracts.isError}
+            <ErrorNotification message={"Error loading contracts"}
+                               opened={contracts.isError}
                                retry={contracts.refresh}/>
             <DatePicker
                 {...{colspan: 2}}
@@ -154,7 +165,7 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
                 label={"End time"}
                 helperText={endTimeHelper}/>
             <HorizontalLayout {...{colspan: 4}}>
-                <span className={"text-xs text-secondary"}>{durationHelper}</span>
+                <span className={"text-xs text-secondary"}>{durationHelper.data}</span>
             </HorizontalLayout>
             <TextArea
                 {...{colspan: 4}}
@@ -169,7 +180,8 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
                 itemLabelPath={"name"}
                 itemValuePath={"id"}
                 itemIdPath={"id"}/>
-            <ErrorNotification message={"Error loading hour categories"} opened={hourCategories.isError}
+            <ErrorNotification message={"Error loading hour categories"}
+                               opened={hourCategories.isError}
                                retry={hourCategories.refresh}/>
         </FormLayout>
     )

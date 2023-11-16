@@ -6,7 +6,7 @@ import {
 
 // TODO There is some code duplication in this file. Refactor!
 
-export type QueryResult<T> = {
+type QueryResult<T> = {
     readonly data: T | undefined;
     readonly isSuccess: boolean;
     readonly isError: boolean;
@@ -14,13 +14,13 @@ export type QueryResult<T> = {
     readonly refresh: () => Promise<void>;
 };
 
-export type QueryKey = any | any[]
+type QueryKey = any | any[]
 
 function toQueryKey(key: QueryKey): any[] {
     return Array.isArray(key) ? key : [key];
 }
 
-export type QueryOptions<T> = {
+type QueryOptions<T> = {
     queryKey: QueryKey;
     queryFunction: () => Promise<T>;
 }
@@ -50,44 +50,7 @@ export function useQuery<T>(options: QueryOptions<T>): QueryResult<T> {
     };
 }
 
-export type ParameterizedQueryOptions<T, P> = {
-    queryKey: QueryKey;
-    queryFunction: (params: P) => Promise<T>;
-    parameter?: P;
-    defaultResult: T;
-}
-
-export function useParameterizedQuery<T, P>(options: ParameterizedQueryOptions<T, P>): QueryResult<T> {
-    const TAG = "useParameterizedQuery";
-    const queryClient = useQueryClient_1();
-    const queryFn = () => {
-        if (options.parameter !== undefined) {
-            console.debug(TAG, options.queryKey, "Invoking query function with parameter", options.parameter);
-            return options.queryFunction(options.parameter);
-        } else {
-            console.debug(TAG, options.queryKey, "Using default query result without invoking query function");
-            return Promise.resolve(options.defaultResult);
-        }
-    };
-    const o = {
-        queryKey: [...toQueryKey(options.queryKey), options.parameter],
-        queryFn: queryFn
-    };
-    const refresh = async () => {
-        console.debug(TAG, options.queryKey, "Refreshing query");
-        await queryClient.refetchQueries(o);
-    };
-    const {data, isSuccess, isError, isLoading} = useQuery_1(o);
-    return {
-        data: data,
-        isSuccess: isSuccess,
-        isError: isError,
-        isLoading: isLoading,
-        refresh: refresh
-    };
-}
-
-export type MutationResult<T> = {
+type MutationResult<T> = {
     readonly data: T | undefined;
     readonly isSuccess: boolean;
     readonly isError: boolean;
@@ -97,7 +60,7 @@ export type MutationResult<T> = {
     readonly reset: () => void;
 };
 
-export type MutationOptions<T> = {
+type MutationOptions<T> = {
     queryKeysToInvalidate?: QueryKey[];
     queryKeysToRefresh?: string[];
     mutationFunction: (data: T) => Promise<T>;
@@ -148,6 +111,33 @@ export function useMutation<T>(options: MutationOptions<T>): MutationResult<T> {
     };
 }
 
-export function undefinedResultToNull<T, A extends Array<any>>(f: (...args: A) => Promise<T | undefined>): (...args: A) => Promise<T | null> {
-    return (...args) => f(...args).then(result => result === undefined ? null : result);
+type ParameterizedQueryOptions<T, P extends Array<any>> = {
+    queryKey: QueryKey;
+    queryFunction: (...params: P) => Promise<T>;
+    params: P;
+};
+
+export function useParameterizedQuery<T, P extends Array<any>>(options: ParameterizedQueryOptions<T, P>): QueryResult<T> {
+    const TAG = "useParameterizedQuery";
+    const queryClient = useQueryClient_1();
+    const queryFn = () => {
+        console.debug(TAG, options.queryKey, "Invoking query function with params", options.params);
+        return options.queryFunction(...options.params)
+    };
+    const o = {
+        queryKey: [...toQueryKey(options.queryKey), ...options.params],
+        queryFn: queryFn
+    };
+    const refresh = async () => {
+        console.debug(TAG, options.queryKey, "Refreshing query");
+        await queryClient.refetchQueries(o);
+    };
+    const {data, isSuccess, isError, isLoading} = useQuery_1(o);
+    return {
+        data: data,
+        isSuccess: isSuccess,
+        isError: isError,
+        isLoading: isLoading,
+        refresh: refresh
+    };
 }
