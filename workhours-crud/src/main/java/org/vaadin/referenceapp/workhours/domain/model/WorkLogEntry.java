@@ -3,8 +3,7 @@ package org.vaadin.referenceapp.workhours.domain.model;
 import jakarta.persistence.*;
 import org.vaadin.referenceapp.workhours.domain.base.BaseAuditedEntity;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.ZonedDateTime;
 
 @Entity
 @Table(name = "work_log_entries")
@@ -26,14 +25,11 @@ public class WorkLogEntry extends BaseAuditedEntity<Long> {
     @ManyToOne(optional = false)
     private HourCategory hourCategory;
 
-    @Column(name = "work_date", nullable = false)
-    private LocalDate date;
-
     @Column(name = "start_time", nullable = false)
-    private LocalTime startTime;
+    private ZonedDateTime startTime;
 
     @Column(name = "end_time", nullable = false)
-    private LocalTime endTime;
+    private ZonedDateTime endTime;
 
     @Column(name = "description")
     private String description;
@@ -42,6 +38,8 @@ public class WorkLogEntry extends BaseAuditedEntity<Long> {
     public Long getId() {
         return id;
     }
+
+    // TODO Add validation
 
     public Project getProject() {
         return project;
@@ -67,27 +65,19 @@ public class WorkLogEntry extends BaseAuditedEntity<Long> {
         this.hourCategory = hourCategory;
     }
 
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
-
-    public LocalTime getStartTime() {
+    public ZonedDateTime getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(LocalTime startTime) {
+    public void setStartTime(ZonedDateTime startTime) {
         this.startTime = startTime;
     }
 
-    public LocalTime getEndTime() {
+    public ZonedDateTime getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(LocalTime endTime) {
+    public void setEndTime(ZonedDateTime endTime) {
         this.endTime = endTime;
     }
 

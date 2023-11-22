@@ -7,29 +7,27 @@ import org.vaadin.referenceapp.workhours.adapter.hilla.reference.HourCategoryRef
 import org.vaadin.referenceapp.workhours.adapter.hilla.reference.ProjectReference;
 import org.vaadin.referenceapp.workhours.domain.model.WorkLogEntry;
 
+import java.time.Duration;
 import java.time.LocalDate;
-import java.time.LocalTime;
 
 
-public record WorkLogListEntryDTO(
+public record WorkLogQueryRecord(
         Long id,
         ProjectReference project,
         ContractReference contract,
         LocalDate date,
-        LocalTime startTime,
-        LocalTime endTime,
+        Long durationInSeconds,
         @Nullable String description,
         HourCategoryReference hourCategory
 ) {
 
-    static WorkLogListEntryDTO fromEntity(WorkLogEntry entity) {
-        return new WorkLogListEntryDTO(
+    static WorkLogQueryRecord fromEntity(WorkLogEntry entity) {
+        return new WorkLogQueryRecord(
                 entity.nullSafeId(),
                 ProjectReference.fromEntity(entity.getProject()),
                 ContractReference.fromEntity(entity.getContract()),
-                entity.getDate(),
-                entity.getStartTime(),
-                entity.getEndTime(),
+                entity.getStartTime().toLocalDate(),
+                Duration.between(entity.getStartTime(), entity.getEndTime()).toSeconds(),
                 entity.getDescription(),
                 HourCategoryReference.fromEntity(entity.getHourCategory())
         );

@@ -1,11 +1,7 @@
 package org.vaadin.referenceapp.workhours.adapter.hilla.worklog;
 
 import dev.hilla.BrowserCallable;
-import dev.hilla.Nullable;
-import dev.hilla.crud.ListService;
-import dev.hilla.crud.filter.Filter;
 import jakarta.annotation.security.RolesAllowed;
-import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import org.vaadin.referenceapp.workhours.domain.model.ContractRepository;
 import org.vaadin.referenceapp.workhours.domain.model.HourCategoryRepository;
@@ -16,12 +12,11 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.util.List;
 import java.util.Optional;
 
 @BrowserCallable
 @RolesAllowed("ROLE_EMPLOYEE") // Replace with constant
-class WorkLogService implements ListService<WorkLogListEntryDTO> {
+class WorkLogService {
 
     private final ProjectRepository projectRepository;
     private final ContractRepository contractRepository;
@@ -66,11 +61,5 @@ class WorkLogService implements ListService<WorkLogListEntryDTO> {
         var from = date.atTime(startTime).atZone(tz);
         var to = endDate.atTime(endTime).atZone(tz);
         return Duration.between(from, to).toSeconds();
-    }
-
-    @Override
-    public List<WorkLogListEntryDTO> list(Pageable pageable, @Nullable Filter filter) {
-        // TODO Apply filters
-        return workLogEntryRepository.findAll(pageable).stream().map(WorkLogListEntryDTO::fromEntity).toList();
     }
 }

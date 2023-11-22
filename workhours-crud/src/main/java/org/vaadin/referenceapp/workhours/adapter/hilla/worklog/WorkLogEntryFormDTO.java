@@ -12,9 +12,7 @@ import org.vaadin.referenceapp.workhours.domain.model.Project;
 import org.vaadin.referenceapp.workhours.domain.model.WorkLogEntry;
 import org.vaadin.referenceapp.workhours.domain.primitives.UserId;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.*;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
@@ -44,8 +42,9 @@ public record WorkLogEntryFormDTO(
                 entity.nullSafeId(),
                 ProjectReference.fromEntity(entity.getProject()),
                 ContractReference.fromEntity(entity.getContract()),
-                entity.getDate(), entity.getStartTime(),
-                entity.getEndTime(),
+                entity.getStartTime().toLocalDate(),
+                entity.getStartTime().toLocalTime(),
+                entity.getEndTime().toLocalTime(),
                 entity.getDescription(),
                 HourCategoryReference.fromEntity(entity.getHourCategory()),
                 entity.getCreatedBy().map(UserId::toString).orElse(null),
@@ -59,13 +58,25 @@ public record WorkLogEntryFormDTO(
                                  LookupFunction<Long, Project> projectLookup,
                                  LookupFunction<Long, Contract> contractLookup,
                                  LookupFunction<Long, HourCategory> hourCategoryLookup) {
+        requireNonNull(project(), "Project is required");
+        requireNonNull(contract(), "Contract is required");
+        requireNonNull(hourCategory(), "Hour category is required");
+        requireNonNull(date(), "Date is required");
+        requireNonNull(startTime(), "Start time is required");
+        requireNonNull(endTime(), "End time is required");
+
         var entity = Optional.ofNullable(id()).flatMap(workLogEntryLookup::findById).orElseGet(WorkLogEntry::new);
-        entity.setProject(projectLookup.getById(requireNonNull(project()).id()));
-        entity.setContract(contractLookup.getById(requireNonNull(contract()).id()));
-        entity.setHourCategory(hourCategoryLookup.getById(requireNonNull(hourCategory()).id()));
-        entity.setDate(date());
-        entity.setStartTime(startTime());
-        entity.setEndTime(endTime());
+
+        var startTime = ZonedDateTime.of(date(), startTime(), ZoneId.systemDefault()); // TODO Use user's time zone
+        var endTime = endTime().isBefore(startTime())
+                ? ZonedDateTime.of(date().plusDays(1), endTime(), ZoneId.systemDefault())
+                : ZonedDateTime.of(date(), endTime(), ZoneId.systemDefault());
+
+        entity.setProject(projectLookup.getById(project().id()));
+        entity.setContract(contractLookup.getById(contract().id()));
+        entity.setHourCategory(hourCategoryLookup.getById(hourCategory().id()));
+        entity.setStartTime(startTime);
+        entity.setEndTime(endTime);
         entity.setDescription(description());
         return entity;
     }
