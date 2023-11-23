@@ -3,17 +3,28 @@ package org.vaadin.referenceapp.workhours.adapter.hilla.worklog;
 import dev.hilla.BrowserCallable;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.vaadin.referenceapp.workhours.domain.model.WorkLogEntry;
 import org.vaadin.referenceapp.workhours.domain.model.WorkLogEntryRepository;
 
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.Optional;
 
 @BrowserCallable
 @RolesAllowed("ROLE_EMPLOYEE") // Replace with constant
 class WorkLogQueryObject {
+
+    private static final Map<String, Sort.Order> ORDERS = Map.of(
+            "project.name", WorkLogEntryRepository.ORDER_BY_PROJECT_NAME,
+            "contract.name", WorkLogEntryRepository.ORDER_BY_CONTRACT_NAME,
+            "date", WorkLogEntryRepository.ORDER_BY_START_TIME
+    );
+    private static final Sort.Order DEFAULT_ORDER = WorkLogEntryRepository.ORDER_BY_START_TIME;
 
     private final WorkLogEntryRepository workLogEntryRepository;
 
@@ -22,7 +33,6 @@ class WorkLogQueryObject {
     }
 
     public WorkLogQueryResponse find(WorkLogQueryRequest request) {
-        // TODO Validate and convert sort order
         return toResponse(workLogEntryRepository.findAll(toSpecification(request), toPageable(request)));
     }
 
@@ -48,6 +58,20 @@ class WorkLogQueryObject {
     }
 
     private Pageable toPageable(WorkLogQueryRequest request) {
-        return request.pageable(); // TODO Validate and convert sort order
+        return PageRequest
+                .of(request.pageable().getPageNumber(), request.pageable().getPageSize())
+                .withSort(sanitizeSort(request.pageable().getSort()));
+    }
+
+    private Sort sanitizeSort(Sort sort) {
+        var sanitized = Sort.by(sort
+                .flatMap(incomingOrder ->
+                        Optional.ofNullable(ORDERS.get(incomingOrder.getProperty()))
+                                .map(outgoingOrder -> outgoingOrder.with(incomingOrder.getDirection())).stream())
+                .toList());
+        if (sanitized.isEmpty()) {
+            return Sort.by(DEFAULT_ORDER);
+        }
+        return sanitized;
     }
 }

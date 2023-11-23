@@ -1,12 +1,18 @@
 package org.vaadin.referenceapp.workhours.domain.model;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.vaadin.referenceapp.workhours.domain.base.BaseRepository;
+import org.vaadin.referenceapp.workhours.domain.base.OrderBuilder;
 
 import java.time.ZonedDateTime;
 
 public interface WorkLogEntryRepository extends BaseRepository<WorkLogEntry, Long>, JpaSpecificationExecutor<WorkLogEntry> {
+
+    Sort.Order ORDER_BY_PROJECT_NAME = OrderBuilder.of(WorkLogEntry_.project).then(Project_.name).asc();
+    Sort.Order ORDER_BY_CONTRACT_NAME = OrderBuilder.of(WorkLogEntry_.contract).then(Contract_.name).asc();
+    Sort.Order ORDER_BY_START_TIME = OrderBuilder.of(WorkLogEntry_.startTime).desc();
 
     static Specification<WorkLogEntry> withProjectId(long projectId) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get(WorkLogEntry_.project).get(Project_.id), projectId);
