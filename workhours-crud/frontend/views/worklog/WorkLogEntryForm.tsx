@@ -13,7 +13,7 @@ import {formatDuration} from "Frontend/i18n/DurationFormatter";
 import WorkLogEntryFormDTOModel
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/WorkLogEntryFormDTOModel";
 import {ReferenceLookupService, WorkLogService} from "Frontend/generated/endpoints";
-import {useParameterizedQuery, useQuery} from "Frontend/util/Service";
+import {useServiceQuery} from "Frontend/util/Service";
 import ErrorNotification from "Frontend/components/ErrorNotification";
 import ProjectReference
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/ProjectReference";
@@ -37,23 +37,20 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
     console.debug("Rendering WorkLogEntryForm");
     const {model, value, field} = form;
 
-    const projects = useQuery({
-        queryKey: "WorkLogEntryFormProjects",
-        queryFunction: ReferenceLookupService.findProjects
+    const projects = useServiceQuery({
+        serviceFunction: ReferenceLookupService.findProjects,
+        params: []
     });
-    const contracts = useParameterizedQuery({
-        queryKey: "WorkLogEntryFormContracts",
-        queryFunction: async (project?: ProjectReference) => project ? await ReferenceLookupService.findContractsByProject(project) : [],
+    const contracts = useServiceQuery({
+        serviceFunction: async (project?: ProjectReference) => project ? await ReferenceLookupService.findContractsByProject(project) : [],
         params: [value.project]
     });
-    const hourCategories = useParameterizedQuery({
-        queryKey: "WorkLogEntryFormHourCategories",
-        queryFunction: async (contract?: ContractReference) => contract ? await ReferenceLookupService.findHourCategoriesByContract(contract) : [],
+    const hourCategories = useServiceQuery({
+        serviceFunction: async (contract?: ContractReference) => contract ? await ReferenceLookupService.findHourCategoriesByContract(contract) : [],
         params: [value.contract]
     });
-    const durationHelper = useParameterizedQuery({
-        queryKey: "WorkLogEntryFormDurationHelper",
-        queryFunction: async (date?: string, startTime?: string, endTime?: string) => {
+    const durationHelper = useServiceQuery({
+        serviceFunction: async (date?: string, startTime?: string, endTime?: string) => {
             if (date && startTime && endTime) {
                 const durationInSeconds = await WorkLogService.calculateDurationInSecondsBetween(date, startTime, endTime);
                 const duration = Duration.ofSeconds(durationInSeconds);
@@ -119,70 +116,68 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
         }
     }, [value.startTime, value.endTime]);
 
-    console.log("Form value", value);
-    console.log("Project field value", projectField.value);
-    console.log("Contract field value", contractField.value);
-    console.log("Date field value", dateField.value);
-    console.log("Start time field value", startTimeField.value);
-    console.log("End time field value", endTimeField.value);
-    console.log("Hour category field value", hourCategoryField.value);
-
     return (
         <FormLayout responsiveSteps={responsiveSteps}>
             <ComboBox
-                {...{colspan: 2}}
-                {...field(model.project)}
                 label={"Project"}
                 items={projects.data}
                 itemLabelPath={"name"}
                 itemValuePath={"id"}
-                itemIdPath={"id"}/>
+                itemIdPath={"id"}
+                {...{colspan: 2}}
+                {...field(model.project)}
+            />
             <ErrorNotification message={"Error loading projects"}
                                opened={projects.isError}
-                               retry={projects.refresh}/>
+                               onRetry={projects.retry}/>
             <ComboBox
-                {...{colspan: 2}}
-                {...field(model.contract)}
                 label={"Contract"}
                 helperText={contractHelper}
                 items={contracts.data}
                 itemLabelPath={"name"}
                 itemValuePath={"id"}
                 itemIdPath={"id"}
+                {...{colspan: 2}}
+                {...field(model.contract)}
             />
             <ErrorNotification message={"Error loading contracts"}
                                opened={contracts.isError}
-                               retry={contracts.refresh}/>
+                               onRetry={contracts.retry}/>
             <DatePicker
+                label={"Date"}
                 {...{colspan: 2}}
                 {...field(model.date)}
-                label={"Date"}/>
+            />
             <TimePicker
+                label={"Start time"}
                 {...field(model.startTime)}
-                label={"Start time"}/>
+            />
             <TimePicker
-                {...field(model.endTime)}
                 label={"End time"}
-                helperText={endTimeHelper}/>
+                helperText={endTimeHelper}
+                {...field(model.endTime)}
+            />
             <HorizontalLayout {...{colspan: 4}}>
                 <span className={"text-xs text-secondary"}>{durationHelper.data}</span>
             </HorizontalLayout>
             <TextArea
+                label={"Description"}
                 {...{colspan: 4}}
                 {...field(model.description)}
-                label={"Description"}/>
+            />
             <ComboBox
-                {...{colspan: 4}}
-                {...field(model.hourCategory)}
                 label={"Category"}
                 helperText={hourCategoryHelper}
                 items={hourCategories.data}
                 itemLabelPath={"name"}
                 itemValuePath={"id"}
-                itemIdPath={"id"}/>
+                itemIdPath={"id"}
+                {...{colspan: 4}}
+                {...field(model.hourCategory)}
+            />
             <ErrorNotification message={"Error loading hour categories"}
                                opened={hourCategories.isError}
-                               retry={hourCategories.refresh}/>
+                               onRetry={hourCategories.retry}/>
         </FormLayout>
     )
 }

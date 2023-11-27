@@ -7,6 +7,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
 @Configuration
 class KeycloakConfig {
@@ -38,7 +44,18 @@ class KeycloakConfig {
     }
 
     @Bean
-    public GrantedAuthoritiesMapper grantedAuthoritiesMapper() {
-        return new KeycloakGrantedAuthoritiesMapper();
+    public OAuth2UserService<OidcUserRequest, OidcUser> oauth2UserService() {
+        // Using a GrantedAuthoritiesMapper is not enough, you need to override the user service like this.
+        // The reason is that the SSO Kit will ignore whatever the authorities mapper returns and instead
+        // use the raw OidcUser object when fetching authorities.
+        return new OidcUserService() {
+            private final GrantedAuthoritiesMapper grantedAuthoritiesMapper = new KeycloakGrantedAuthoritiesMapper();
+
+            @Override
+            public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
+                var original = super.loadUser(userRequest);
+                return new DefaultOidcUser(grantedAuthoritiesMapper.mapAuthorities(original.getAuthorities()), original.getIdToken(), original.getUserInfo()); // TODO nameAttributeKey
+            }
+        };
     }
 }

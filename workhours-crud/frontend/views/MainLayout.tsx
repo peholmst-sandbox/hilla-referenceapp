@@ -1,14 +1,17 @@
 import {AppLayout} from '@hilla/react-components/AppLayout.js';
 import {DrawerToggle} from '@hilla/react-components/DrawerToggle.js';
-import Placeholder from 'Frontend/components/placeholder/Placeholder.js';
 import {useRouteMetadata} from 'Frontend/util/routing.js';
-import {Suspense, useEffect, useState} from 'react';
-import {NavLink, Outlet} from 'react-router-dom';
-import {Avatar} from "@hilla/react-components/Avatar";
+import React, {Suspense, useEffect, useState} from 'react';
+import {Outlet} from 'react-router-dom';
 import {useSsoContext} from "@hilla/sso-kit-client-react";
 import {createRoot} from "react-dom/client";
 import {MenuBar, MenuBarItem, MenuBarItemSelectedEvent} from "@hilla/react-components/MenuBar";
 import {ConfirmDialog} from "@hilla/react-components/ConfirmDialog";
+import {SideNav} from "@hilla/react-components/SideNav";
+import {SideNavItem} from "@hilla/react-components/SideNavItem";
+import {Icon} from "@hilla/react-components/Icon";
+import {Avatar} from "@hilla/react-components/Avatar";
+import {ProgressBar} from "@hilla/react-components/ProgressBar";
 
 const navLinkClasses = ({isActive}: any) => {
     return `block rounded-m p-s ${isActive ? 'bg-primary-10 text-primary' : 'text-body'}`;
@@ -19,7 +22,8 @@ interface ClickableMenuBarItem extends MenuBarItem {
 }
 
 export default function MainLayout() {
-    const currentTitle = useRouteMetadata()?.title ?? 'My App';
+    const routeMetaData = useRouteMetadata();
+    const currentTitle = routeMetaData?.title ?? 'My App';
     const ssoContext = useSsoContext();
 
     const [loggedOut, setLoggedOut] = useState(false);
@@ -74,21 +78,36 @@ export default function MainLayout() {
         }
     }
 
+    const isManager = ssoContext.isUserInRole("MANAGER");
+
     return (
         <AppLayout primarySection="drawer">
-            <div slot="drawer" className="flex flex-col justify-between h-full p-m">
-                <header className="flex flex-col gap-m">
-                    <h1 className="text-l m-0">My App</h1>
-                    <nav>
-                        <NavLink className={navLinkClasses} to="/">
-                            Hello World
-                        </NavLink>
-                        <NavLink className={navLinkClasses} to="/about">
-                            About
-                        </NavLink>
-                    </nav>
-                </header>
-            </div>
+            <SideNav slot={"drawer"}>
+                <SideNavItem path={"/"}>
+                    <Icon icon={"vaadin:dashboard"} slot={"prefix"}/>
+                    Dashboard
+                </SideNavItem>
+                <SideNavItem path={"/workhours"}>
+                    <Icon icon={"vaadin:calendar-clock"} slot={"prefix"}/>
+                    Workhours
+                </SideNavItem>
+                {isManager && <SideNavItem>
+                    <Icon icon={"vaadin:cog"} slot={"prefix"}/>
+                    Administration
+                    <SideNavItem path={"/admin/projects"} slot={"children"}>
+                        <Icon icon={"vaadin:package"} slot={"prefix"}/>
+                        Projects
+                    </SideNavItem>
+                    <SideNavItem path={"/admin/contracts"} slot={"children"}>
+                        <Icon icon={"vaadin:book-dollar"} slot={"prefix"}/>
+                        Contracts
+                    </SideNavItem>
+                    <SideNavItem path={"/admin/hourcategories"} slot={"children"}>
+                        <Icon icon={"vaadin:tags"} slot={"prefix"}/>
+                        Hour Categories
+                    </SideNavItem>
+                </SideNavItem>}
+            </SideNav>
 
             <div slot="navbar" className="flex flex-row items-center">
                 <DrawerToggle aria-label="Menu toggle"></DrawerToggle>
@@ -108,7 +127,7 @@ export default function MainLayout() {
                 <p>You have been logged out. Do you want to login again?</p>
             </ConfirmDialog>
 
-            <Suspense fallback={<Placeholder/>}>
+            <Suspense fallback={<ProgressBar indeterminate={true} className="m-0"/>}>
                 <Outlet/>
             </Suspense>
         </AppLayout>

@@ -1,143 +1,166 @@
-import {
-    useMutation as useMutation_1,
-    useQuery as useQuery_1,
-    useQueryClient as useQueryClient_1
-} from "@tanstack/react-query";
+import {useEffect, useState} from "react";
 
 // TODO There is some code duplication in this file. Refactor!
 
-type QueryResult<T> = {
-    readonly data: T | undefined;
-    readonly isSuccess: boolean;
-    readonly isError: boolean;
-    readonly isLoading: boolean;
-    readonly refresh: () => Promise<void>;
-};
+export type UseServiceStatus = "idle" | "pending" | "success" | "error";
 
-type QueryKey = any | any[]
-
-function toQueryKey(key: QueryKey): any[] {
-    return Array.isArray(key) ? key : [key];
-}
-
-type QueryOptions<T> = {
-    queryKey: QueryKey;
-    queryFunction: () => Promise<T>;
-}
-
-export function useQuery<T>(options: QueryOptions<T>): QueryResult<T> {
-    const TAG = "useQuery";
-    const queryClient = useQueryClient_1();
-    const queryFn = () => {
-        console.debug(TAG, options.queryKey, "Invoking query function");
-        return options.queryFunction();
-    };
-    const o = {
-        queryKey: toQueryKey(options.queryKey),
-        queryFn: queryFn
-    };
-    const refresh = async () => {
-        console.debug(TAG, options.queryKey, "Refreshing query");
-        await queryClient.refetchQueries(o);
-    };
-    const {data, isSuccess, isError, isLoading} = useQuery_1(o);
-    return {
-        data: data,
-        isSuccess: isSuccess,
-        isError: isError,
-        isLoading: isLoading,
-        refresh: refresh
-    };
-}
-
-type MutationResult<T> = {
-    readonly data: T | undefined;
-    readonly isSuccess: boolean;
-    readonly isError: boolean;
+export type UseServiceBaseResult<R> = {
+    readonly isIdle: boolean;
     readonly isPending: boolean;
-    readonly mutate: (data: T) => void;
-    readonly mutateAsync: (data: T) => Promise<T>;
+    readonly isSuccess: boolean;
+    readonly isError: boolean;
+    readonly status: UseServiceStatus;
+    readonly data: R | undefined;
+    readonly error: any | undefined;
     readonly reset: () => void;
-};
+}
 
-type MutationOptions<T> = {
-    queryKeysToInvalidate?: QueryKey[];
-    queryKeysToRefresh?: string[];
-    mutationFunction: (data: T) => Promise<T>;
-    onSuccess?: (data: T) => unknown;
-};
+export type UseServiceQueryResult<R> = UseServiceBaseResult<R> & {
+    readonly retry: () => void;
+}
 
-export function useMutation<T>(options: MutationOptions<T>): MutationResult<T> {
-    const TAG = "useMutation";
-    const queryClient = useQueryClient_1();
-    const refresh = async () => {
-        if (options.queryKeysToInvalidate) {
-            for (const key of options.queryKeysToInvalidate) {
-                console.debug(TAG, "Invalidating query", key);
-                await queryClient.invalidateQueries({queryKey: toQueryKey(key)});
-            }
-        }
-        if (options.queryKeysToRefresh) {
-            for (const key of options.queryKeysToRefresh) {
-                console.debug(TAG, "Refreshing query", key);
-                await queryClient.refetchQueries({queryKey: toQueryKey(key)});
-            }
-        }
-    };
-    const cancelQueries = async () => {
-        const queryKeysToCancel = [...options.queryKeysToInvalidate ?? [], ...options.queryKeysToRefresh ?? []];
-        for (const key of queryKeysToCancel) {
-            console.debug(TAG, "Canceling query", key);
-            await queryClient.cancelQueries({queryKey: toQueryKey(key)});
-        }
-    }
-    const {isSuccess, isError, isPending, data, mutate, mutateAsync, reset} = useMutation_1({
-        mutationFn: (data: T) => {
-            console.debug(TAG, "Invoking mutation function with input", data);
-            return options.mutationFunction(data);
-        },
-        onMutate: cancelQueries,
-        onSettled: refresh,
-        onSuccess: options.onSuccess
-    });
+export type UseServiceBaseOptions<A extends Array<any>, R> = {
+    serviceFunction: (...args: A) => Promise<R>;
+    fallbackResult?: R;
+    onSuccess?: (data: R) => void;
+    onError?: (error: any) => void;
+    onDone?: (data: R | undefined, error: any | undefined) => void;
+}
+
+export type UseServiceQueryOptions<A extends Array<any>, R> = UseServiceBaseOptions<A, R> & {
+    params: A;
+}
+
+export function useServiceQuery<A extends Array<any>, R>(options: UseServiceQueryOptions<A, R>): UseServiceQueryResult<R> {
+    const [status, setStatus] = useState<UseServiceStatus>("idle");
+    const [error, setError] = useState();
+    const [data, setData] = useState<R>();
+    const [retryTrigger, setRetryTrigger] = useState(0);
+
+    let cancelled = false;
+
+    useEffect(() => {
+        console.debug("useServiceQuery", options, "Calling service function");
+        setStatus("pending");
+        setData(undefined);
+        setError(undefined);
+
+        cancelled = false;
+        options
+            .serviceFunction(...options.params)
+            .then(result => {
+                if (!cancelled) {
+                    console.debug("useServiceQuery", options, "Function returned", result);
+                    setData(result);
+                    setStatus("success");
+                    if (options.onSuccess) {
+                        options.onSuccess(result);
+                    }
+                    if (options.onDone) {
+                        options.onDone(result, undefined);
+                    }
+                }
+            })
+            .catch(error => {
+                if (!cancelled) {
+                    console.error("useServiceQuery", options, "Error while calling service function", error);
+                    setError(error);
+                    setStatus("error");
+                    if (options.fallbackResult !== undefined) {
+                        setData(options.fallbackResult);
+                    }
+                    if (options.onError) {
+                        options.onError(error);
+                    }
+                    if (options.onDone) {
+                        options.onDone(undefined, error);
+                    }
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [...options.params, retryTrigger]);
+
     return {
+        isIdle: status === "idle",
+        isPending: status === "pending",
+        isSuccess: status === "success",
+        isError: status === "error",
+        status: status,
         data: data,
-        isSuccess: isSuccess,
-        isError: isError,
-        isPending: isPending,
-        mutate: mutate,
-        mutateAsync: mutateAsync,
-        reset: reset
+        error: error,
+        retry: () => setRetryTrigger(Math.random()),
+        reset: () => {
+            console.debug("useServiceQuery", options, "Resetting");
+            setStatus("idle");
+            setData(undefined);
+            setError(undefined);
+        }
     };
 }
 
-type ParameterizedQueryOptions<T, P extends Array<any>> = {
-    queryKey: QueryKey;
-    queryFunction: (...params: P) => Promise<T>;
-    params: P;
-};
+export type UseServiceCallResult<A extends Array<any>, R> = UseServiceBaseResult<R> & {
+    call: (...args: A) => void;
+    callAsync: (...args: A) => Promise<void>;
+}
 
-export function useParameterizedQuery<T, P extends Array<any>>(options: ParameterizedQueryOptions<T, P>): QueryResult<T> {
-    const TAG = "useParameterizedQuery";
-    const queryClient = useQueryClient_1();
-    const queryFn = () => {
-        console.debug(TAG, options.queryKey, "Invoking query function with params", options.params);
-        return options.queryFunction(...options.params)
+export type UseServiceCallOptions<A extends Array<any>, R> = UseServiceBaseOptions<A, R>;
+
+export function useServiceCall<A extends Array<any>, R>(options: UseServiceCallOptions<A, R>): UseServiceCallResult<A, R> {
+    const [status, setStatus] = useState<UseServiceStatus>("idle");
+    const [error, setError] = useState<any>();
+    const [data, setData] = useState<R>();
+
+    const callAsync = async (...args: A) => {
+        console.debug("useServiceCall", options, "Calling function with args", args);
+        setStatus("pending");
+        setData(undefined);
+        setError(undefined);
+        try {
+            const result = await options.serviceFunction(...args);
+            console.debug("useServiceCall", options, "Function returned", result);
+            setData(result);
+            setStatus("success");
+            if (options.onSuccess) {
+                options.onSuccess(result);
+            }
+            if (options.onDone) {
+                options.onDone(result, undefined);
+            }
+        } catch (error) {
+            console.error("useServiceCall", options, "Error while calling function with args", args, error);
+            setError(error);
+            setStatus("error");
+            if (options.onError) {
+                options.onError(error);
+            }
+            if (options.onDone) {
+                options.onDone(undefined, error);
+            }
+            throw error;
+        }
     };
-    const o = {
-        queryKey: [...toQueryKey(options.queryKey), ...options.params],
-        queryFn: queryFn
-    };
-    const refresh = async () => {
-        console.debug(TAG, options.queryKey, "Refreshing query");
-        await queryClient.refetchQueries(o);
-    };
-    const {data, isSuccess, isError, isLoading} = useQuery_1(o);
+
     return {
+        isIdle: status === "idle",
+        isPending: status === "pending",
+        isSuccess: status === "success",
+        isError: status === "error",
+        status: status,
         data: data,
-        isSuccess: isSuccess,
-        isError: isError,
-        isLoading: isLoading,
-        refresh: refresh
+        error: error,
+        call: (...args: A) => {
+            callAsync(...args).then(() => {
+            }, () => {
+            });
+        },
+        callAsync: callAsync,
+        reset: () => {
+            console.debug("useServiceCall", options, "Resetting");
+            setStatus("idle");
+            setData(undefined);
+            setError(undefined);
+        }
     };
 }

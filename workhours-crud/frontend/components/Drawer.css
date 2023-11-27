@@ -1,0 +1,36 @@
+.drawer {
+    background: var(--lumo-base-color);
+    height: 100%;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    overflow: auto;
+    transition: right 200ms ease-out;
+    min-width: 300px;
+    box-shadow: var(--lumo-box-shadow-m);
+}
+
+@media screen and (max-width: 400px) {
+    .drawer {
+        width: 400px;
+        right: -420px; /* Extra 20px to hide the box shadow */
+    }
+
+    .drawer.opened {
+        width: 100%;
+        right: 0;
+    }
+}
+
+@media screen and (min-width: 401px) {
+    .drawer {
+        width: 400px;
+        right: -420px; /* Extra 20px to hide the box shadow */
+    }
+
+    .drawer.opened {
+        width: 400px;
+        right: 0;
+        transition: right 200ms ease-in;
+    }
+}

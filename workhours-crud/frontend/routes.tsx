@@ -1,24 +1,46 @@
 import MainLayout from 'Frontend/views/MainLayout.js';
-import WorkLogEntryDrawer from "Frontend/views/worklog/WorkLogEntryDrawer";
 import {lazy} from 'react';
 import {createBrowserRouter, IndexRouteObject, NonIndexRouteObject} from 'react-router-dom';
-import WorkLogView from "Frontend/views/worklog/WorkLogView";
 import {AccessProps, protectRoutes} from "@hilla/sso-kit-client-react";
-import AdminView from "Frontend/views/admin/AdminView";
 
 export type ViewRouteObject = (IndexRouteObject | NonIndexRouteObject) & AccessProps;
 
-const AboutView = lazy(async () => import('Frontend/views/about/AboutView.js'));
+const WorkLogView = lazy(async () => import("Frontend/views/worklog/WorkLogView.js"));
+const ProjectAdminView = lazy(async () => import("Frontend/views/admin/ProjectAdminView"));
+const ContractAdminView = lazy(async () => import("Frontend/views/admin/ContractAdminView"));
+const HourCategoryAdminView = lazy(async () => import("Frontend/views/admin/HourCategoryAdminView"));
+const DashboardView = lazy(async () => import( "Frontend/views/dashboard/DashboardView"));
 
 export const routes: ViewRouteObject[] = protectRoutes([
     {
         element: <MainLayout/>,
         handle: {title: 'Main'},
         children: [
-            {path: '/about', element: <AboutView/>, handle: {title: 'About'}},
-            {path: '/entry', element: <WorkLogEntryDrawer/>, handle: {title: 'Time Entry'}},
             {path: '/workhours', element: <WorkLogView/>, handle: {title: "Workhours"}, requireAuthentication: true},
-            {path: '/admin', element: <AdminView/>, handle: {title: "Admin"}, requireAuthentication: true}
+            {
+                path: '/admin/projects',
+                element: <ProjectAdminView/>,
+                handle: {title: "Manage Projects"},
+                requireAuthentication: true
+            },
+            {
+                path: '/admin/contracts',
+                element: <ContractAdminView/>,
+                handle: {title: "Manage Contracts"},
+                requireAuthentication: true
+            },
+            {
+                path: '/admin/hourcategories',
+                element: <HourCategoryAdminView/>,
+                handle: {title: "Manage Hour Categories"},
+                requireAuthentication: true
+            },
+            {
+                path: '/',
+                element: <DashboardView/>,
+                handle: {title: "Dashboard"},
+                requireAuthentication: true
+            }
         ],
     },
 ]);

@@ -1,107 +1,203 @@
-import {VerticalLayout} from "@hilla/react-components/VerticalLayout";
-import {AutoGrid} from "@hilla/react-crud";
 import {HorizontalLayout} from "@hilla/react-components/HorizontalLayout";
 import {Button} from "@hilla/react-components/Button.js";
 import {ComboBox} from "@hilla/react-components/ComboBox";
 import {DatePicker} from "@hilla/react-components/DatePicker";
-import WorkLogEntryDrawer from "Frontend/views/worklog/WorkLogEntryDrawer";
-import {useState} from "react";
+import {useEffect, useRef, useState} from "react";
+import {Grid, type GridElement} from "@hilla/react-components/Grid";
+import {GridColumn} from "@hilla/react-components/GridColumn";
+import {useServiceCall, useServiceQuery} from "Frontend/util/Service";
+import {ReferenceLookupService, WorkLogQueryObject, WorkLogService} from "Frontend/generated/endpoints";
 import ProjectReference
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/ProjectReference";
 import ContractReference
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/ContractReference";
-import WorkLogListEntryDTOModel
-    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/WorkLogListEntryDTOModel";
-import WorkLogListEntryDTO
-    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/WorkLogListEntryDTO";
+import {nullToUndefined} from "Frontend/util/ServiceUtils";
+import WorkLogQueryRecord
+    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/WorkLogQueryRecord";
+import {GridSortColumn} from "@hilla/react-components/GridSortColumn";
+import {useDataProvider} from "Frontend/util/DataProvider";
+import {VerticalLayout} from "@hilla/react-components/VerticalLayout";
+import OnlineOnly from "Frontend/components/OnlineOnly";
+import WarningMessage from "Frontend/components/WarningMessage";
+import Drawer from "Frontend/components/Drawer";
 import WorkLogEntryFormDTO
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/WorkLogEntryFormDTO";
-import {WorkLogService} from "Frontend/generated/endpoints";
+import AuditingInformation from "Frontend/components/AuditingInformation";
+import SaveCancelButtons from "Frontend/components/SaveCancelButtons";
+import ErrorNotification from "Frontend/components/ErrorNotification";
+import WorkLogEntryForm from "Frontend/views/worklog/WorkLogEntryForm";
+import {useForm} from "@hilla/react-form";
+import WorkLogEntryFormDTOModel
+    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/WorkLogEntryFormDTOModel";
+
+interface EntryLoader {
+    isNew: boolean;
+
+    load(read?: (entry: WorkLogEntryFormDTO) => void, clear?: () => void): void;
+}
 
 export default function WorkLogView() {
-    const [projects, setProjects] = useState<ProjectReference[]>([]);
-    const [contracts, setContracts] = useState<ContractReference[]>([]);
-    const [selection, setSelection] = useState<WorkLogListEntryDTO[]>([]);
-    const [drawerVisible, setDrawerVisible] = useState(false);
-    const [drawerEntryId, setDrawerEntryId] = useState<number>();
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [filterByProject, setFilterByProject] = useState<ProjectReference | null>();
+    const [filterByContract, setFilterByContract] = useState<ContractReference | null>();
+    const [filterFrom, setFilterFrom] = useState<string>();
+    const [filterTo, setFilterTo] = useState<string>();
+    const projects = useServiceQuery({
+        serviceFunction: ReferenceLookupService.findProjects,
+        params: []
+    });
+    const contracts = useServiceQuery({
+        serviceFunction: async (project: ProjectReference | null | undefined) => project ? await ReferenceLookupService.findContractsByProject(project) : [],
+        params: [filterByProject]
+    });
+    const load = useServiceCall({
+        serviceFunction: WorkLogService.loadForm,
+        onSuccess: editForm
+    });
+    const save = useServiceCall({
+        serviceFunction: WorkLogService.saveForm,
+        onSuccess: () => {
+            refreshGrid();
+            hideDrawer();
+        }
+    });
+    const dataProvider = useDataProvider({
+        queryFunction: async (pageable) => {
+            const {items, count} = await WorkLogQueryObject.find({
+                project: nullToUndefined(filterByProject),
+                contract: nullToUndefined(filterByContract),
+                fromDate: filterFrom,
+                toDate: filterTo,
+                pageable: pageable
+            });
+            return {items, count};
+        },
+        deps: [filterByProject, filterByContract, filterFrom, filterTo]
+    });
 
-    // TODO Apply filters
+    const grid = useRef<GridElement<WorkLogQueryRecord>>(null);
+    const [selection, setSelection] = useState<WorkLogQueryRecord[]>([]);
+    const [entry, setEntry] = useState<EntryLoader | null>(null);
+    const form = useForm(WorkLogEntryFormDTOModel, {
+        onSubmit: save.callAsync
+    })
 
-    function onCancel() {
-        closeDrawer();
-    }
-
-    function onSave(entry: WorkLogEntryFormDTO) {
-        refreshGrid();
-        closeDrawer();
-    }
+    useEffect(() => {
+        if (entry) {
+            entry.load(form.read, form.clear);
+        } else {
+            form.clear();
+        }
+    }, [entry]);
 
     function addEntry() {
-        setDrawerEntryId(-Date.now()); // TODO Would prefer to be able to call a method here.
-        setDrawerVisible(true);
+        setEntry({
+            isNew: true,
+            load(clear: () => void) {
+                clear();
+            }
+        });
         setSelection([]);
     }
 
-    function editEntry(entry: WorkLogListEntryDTO) {
-        setDrawerEntryId(entry.id);
-        setDrawerVisible(true);
+    function editEntry(entry: WorkLogQueryRecord) {
+        load.call(entry.id);
         setSelection([entry]);
     }
 
-    function closeDrawer() {
-        setDrawerEntryId(undefined);
-        setDrawerVisible(false);
+    function editForm(entry?: WorkLogEntryFormDTO) {
+        if (entry) {
+            setEntry({
+                isNew: false,
+                load(read: (entry: WorkLogEntryFormDTO) => void) {
+                    read(entry);
+                }
+            });
+        } else {
+            hideDrawer();
+        }
+    }
+
+    function hideDrawer() {
+        setEntry(null);
         setSelection([]);
     }
 
     function refreshGrid() {
-        setRefreshTrigger(Date.now); // TODO Would prefer to be able to call a method here.
+        grid.current?.clearCache();
     }
 
     return (
         <>
-            <VerticalLayout theme={"padding spacing"}
-                            className={"work-log-view" + (drawerVisible ? " drawer-visible" : "")}>
-                <HorizontalLayout theme={"spacing"} style={{flexWrap: "wrap"}}>
-                    <ComboBox
-                        items={projects}
-                        placeholder={"Filter by Project"}
-                        style={{flexGrow: 1}}
-                        itemLabelPath={"name"}
-                        clearButtonVisible={true}
-                    />
-                    <ComboBox
-                        items={contracts}
-                        placeholder={"Filter by Contract"}
-                        style={{flexGrow: 1}}
-                        itemLabelPath={"name"}
-                        clearButtonVisible={true}
-                    />
-                    <DatePicker placeholder={"From"} style={{flexGrow: 1}}/>
-                    <DatePicker placeholder={"To"} style={{flexGrow: 1}}/>
-                    <Button theme={"primary"} style={{flexGrow: 1}} onClick={addEntry}>Add</Button>
-                </HorizontalLayout>
-                <AutoGrid
-                    service={WorkLogService}
-                    model={WorkLogListEntryDTOModel}
-                    noHeaderFilters={true}
-                    visibleColumns={["project", "contract", "date", "startTime", "endTime", "description", "hourCategory"]}
-                    selectedItems={selection}
-                    onActiveItemChanged={(e) => {
-                        const item = e.detail.value;
-                        if (item) {
-                            editEntry(item);
-                        } else {
-                            closeDrawer();
-                        }
-                    }}
-                    refreshTrigger={refreshTrigger}
-                />
-                <WorkLogEntryDrawer className={"work-log-entry-drawer"} workLogEntryId={drawerEntryId}
-                                    onCancel={onCancel}
-                                    onSave={onSave}/>
-            </VerticalLayout>
+            <OnlineOnly
+                fallback={<WarningMessage message={"Worklog entry is not available offline."} className={"m-m"}/>}>
+                <VerticalLayout theme={"spacing padding"} className={"w-full h-full overflow-hidden relative"}>
+                    <HorizontalLayout theme={"spacing"} style={{flexWrap: "wrap"}}>
+                        <ComboBox
+                            items={projects.data}
+                            placeholder={"Filter by Project"}
+                            style={{flexGrow: 1}}
+                            itemLabelPath={"name"}
+                            clearButtonVisible={true}
+                            selectedItem={filterByProject}
+                            onSelectedItemChanged={e => setFilterByProject(e.detail.value)}
+                        />
+                        <ComboBox
+                            items={contracts.data}
+                            placeholder={"Filter by Contract"}
+                            style={{flexGrow: 1}}
+                            itemLabelPath={"name"}
+                            clearButtonVisible={true}
+                            selectedItem={filterByContract}
+                            onSelectedItemChanged={e => setFilterByContract(e.detail.value)}
+                        />
+                        <DatePicker
+                            placeholder={"From"}
+                            style={{flexGrow: 1}}
+                            value={filterFrom}
+                            clearButtonVisible={true}
+                            onValueChanged={e => setFilterFrom(e.detail.value)}
+                        />
+                        <DatePicker
+                            placeholder={"To"}
+                            style={{flexGrow: 1}}
+                            value={filterTo}
+                            clearButtonVisible={true}
+                            onValueChanged={e => setFilterTo(e.detail.value)}
+                        />
+                        <Button theme={"primary"} style={{flexGrow: 1}} onClick={addEntry}>Add</Button>
+                    </HorizontalLayout>
+                    <Grid dataProvider={dataProvider}
+                          selectedItems={selection}
+                          onActiveItemChanged={event => {
+                              const item = event.detail.value;
+                              item ? editEntry(item) : hideDrawer();
+                          }}
+                          ref={grid}>
+                        <GridSortColumn path={"project.name"} header={"Project"} resizable/>
+                        <GridSortColumn path={"contract.name"} header={"Contract"} resizable/>
+                        <GridSortColumn path={"date"} header={"Date"} resizable/>
+                        <GridColumn path={"durationInSeconds"} header={"Duration"} resizable/>
+                        <GridColumn path={"description"} header={"Description"} resizable/>
+                        <GridColumn path={"hourCategory.name"} header={"Hour Category"} resizable/>
+                    </Grid>
+                    <Drawer opened={entry !== null}>
+                        {entry && (<>
+                            <h1 className={"text-xl text-header"}>{entry.isNew ? "Add Work" : "Edit Work"}</h1>
+                            <WorkLogEntryForm form={form}/>
+                            <AuditingInformation lastModifiedDate={form.value.modifiedOn}
+                                                 lastModifiedBy={form.value.modifiedBy}
+                                                 createdDate={form.value.createdOn}
+                                                 createdBy={form.value.createdBy}/>
+                            <SaveCancelButtons onSave={form.submit} onCancel={hideDrawer}
+                                               saveCaption={entry.isNew ? "Add Work" : "Update Work"}
+                                               saveDisabled={form.invalid || save.isError || save.isPending}/>
+                            <ErrorNotification message={"Error saving work"}
+                                               opened={save.isError}
+                                               onClose={save.reset}/>
+                        </>)}
+                    </Drawer>
+                </VerticalLayout>
+            </OnlineOnly>
         </>
     );
 }

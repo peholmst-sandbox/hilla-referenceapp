@@ -1,43 +1,126 @@
-import {Crud} from "@hilla/react-components/Crud";
 import {HourCategoryAdminService} from "Frontend/generated/endpoints";
-import {ProgressBar} from "@hilla/react-components/ProgressBar.js";
-import ErrorMessage from "Frontend/components/ErrorMessage";
-import {useMutation, useQuery} from "Frontend/util/Service";
+import {useServiceCall, useServiceQuery} from "Frontend/util/Service";
 import WarningMessage from "Frontend/components/WarningMessage";
-import React from "react";
+import React, {useEffect, useState} from "react";
 import OnlineOnly from "Frontend/components/OnlineOnly";
 import ErrorNotification from "Frontend/components/ErrorNotification";
+import HourCategoryDTO from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/admin/HourCategoryDTO";
+import HourCategoryDTOModel
+    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/admin/HourCategoryDTOModel";
+import {useForm, useFormPart} from "@hilla/react-form";
+import {NotBlank} from "@hilla/form";
+import {VerticalLayout} from "@hilla/react-components/VerticalLayout";
+import {HorizontalLayout} from "@hilla/react-components/HorizontalLayout";
+import {Button} from "@hilla/react-components/Button";
+import {Grid} from "@hilla/react-components/Grid";
+import {GridSortColumn} from "@hilla/react-components/GridSortColumn";
+import Drawer from "Frontend/components/Drawer";
+import {FormLayout} from "@hilla/react-components/FormLayout";
+import {TextField} from "@hilla/react-components/TextField";
+import SaveCancelButtons from "Frontend/components/SaveCancelButtons";
+import AuditingInformation from "Frontend/components/AuditingInformation";
+
+interface HourCategoryLoader {
+    isNew: boolean
+
+    load(read?: (hourCategory: HourCategoryDTO) => void, clear?: () => void): void
+}
 
 export default function HourCategoryAdminView() {
-    console.debug("Rendering HourCategoryAdminView");
+    const hourCategories = useServiceQuery({
+        serviceFunction: HourCategoryAdminService.findAll,
+        params: [],
+        fallbackResult: []
+    })
+    const save = useServiceCall({
+        serviceFunction: HourCategoryAdminService.save,
+        onSuccess: () => {
+            hourCategories.retry()
+            hideDrawer()
+        }
+    })
+    const [selection, setSelection] = useState<HourCategoryDTO[]>([])
+    const [hourCategory, setHourCategory] = useState<HourCategoryLoader | null>(null)
+    const {field, model, invalid, submit, read, clear, value} = useForm(HourCategoryDTOModel, {
+        onSubmit: save.callAsync
+    })
 
-    const QUERY_KEY = "hour-category-admin-view";
-    const queryOptions = {
-        queryKey: QUERY_KEY,
-        queryFunction: HourCategoryAdminService.findAll
-    };
-    const mutationOptions = {
-        queryKeysToRefresh: [QUERY_KEY],
-        mutationFunction: HourCategoryAdminService.save
+    const nameField = useFormPart(model.name)
+
+    useEffect(() => {
+        nameField.addValidator(new NotBlank({message: "Please enter a hour category name."}))
+    }, [])
+
+    useEffect(() => {
+        if (hourCategory) {
+            hourCategory.load(read, clear)
+        } else {
+            clear()
+        }
+    }, [hourCategory])
+
+    function addHourCategory() {
+        setHourCategory({
+            isNew: true,
+            load(clear: () => void) {
+                clear()
+            }
+        })
+        setSelection([])
     }
 
-    const query = useQuery(queryOptions);
-    const mutation = useMutation(mutationOptions);
+    function editHourCategory(hourCategory: HourCategoryDTO) {
+        setHourCategory({
+            isNew: false,
+            load(read: (hourCategory: HourCategoryDTO) => void) {
+                read(hourCategory)
+            }
+        })
+        setSelection([hourCategory])
+    }
+
+    function hideDrawer() {
+        setHourCategory(null)
+        setSelection([])
+    }
 
     return (
-        <OnlineOnly fallback={<WarningMessage message={"Hour category administration is not available offline."}/>}>
-            {query.isLoading ? <ProgressBar indeterminate={true}/> : query.isSuccess ?
-                <>
-                    <Crud include={"name"}
-                          items={query.data}
-                          className={"h-full"}
-                          onSave={event => mutation.mutate(event.detail.item)}
-                    />
-                    <ErrorNotification message={"Error saving hour category"}
-                                       opened={mutation.isError}
-                                       onClose={mutation.reset}/>
-                </>
-                : <ErrorMessage message={"Error loading hour categories"} retry={query.refresh}/>}
+        <OnlineOnly fallback={<WarningMessage message={"Hour category management is not available offline."}
+                                              className={"m-m"}/>}>
+            <VerticalLayout theme={"spacing padding"} className={"w-full h-full overflow-hidden relative"}>
+                <HorizontalLayout theme={"spacing"} style={{flexWrap: "wrap"}}>
+                    <Button theme={"primary"} style={{flexGrow: 1}} onClick={addHourCategory}>Add Hour Category</Button>
+                </HorizontalLayout>
+                <Grid items={hourCategories.data}
+                      itemIdPath={"id"}
+                      selectedItems={selection}
+                      onActiveItemChanged={event => {
+                          const item = event.detail.value
+                          item ? editHourCategory(item) : hideDrawer()
+                      }}>
+                    <GridSortColumn path={"name"} header={"Hour Category Name"} resizable/>
+                </Grid>
+                <ErrorNotification message={"Error loading hour categories"} opened={hourCategories.isError}
+                                   onRetry={hourCategories.retry}/>
+                <Drawer opened={hourCategory !== null}>
+                    {hourCategory && (<>
+                        <h1 className={"text-xl text-header"}>{hourCategory.isNew ? "Add Hour Category" : "Edit Hour Category"}</h1>
+                        <FormLayout>
+                            <TextField label={"Hour Category Name"}
+                                       {...field(model.name)}/>
+                        </FormLayout>
+                        <AuditingInformation lastModifiedDate={value.modifiedOn}
+                                             lastModifiedBy={value.modifiedBy}
+                                             createdDate={value.createdOn}
+                                             createdBy={value.createdBy}/>
+                        <SaveCancelButtons onSave={submit} onCancel={hideDrawer}
+                                           saveDisabled={invalid || save.isError || save.isPending}/>
+                        <ErrorNotification message={"Error saving hour category"}
+                                           opened={save.isError}
+                                           onClose={save.reset}/>
+                    </>)}
+                </Drawer>
+            </VerticalLayout>
         </OnlineOnly>
-    );
+    )
 }
