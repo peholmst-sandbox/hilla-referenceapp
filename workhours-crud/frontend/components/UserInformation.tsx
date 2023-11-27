@@ -28,7 +28,9 @@ export default function UserInformation(props: UserInformationProps) {
     if (userDetails) {
         return (
             <>
-                <Button theme={"tertiary small"} onClick={() => setDialogOpen(true)}>{userDetails.displayName}</Button>
+                <Button theme={"tertiary small"} onClick={() => setDialogOpen(true)}><Avatar
+                    name={userDetails.displayName} img={userDetails.picture} theme={"xsmall"}
+                    slot={"prefix"}></Avatar> {userDetails.displayName}</Button>
                 <Dialog opened={dialogOpen}
                         onOpenedChanged={(event) => setDialogOpen(event.detail.value)}
                         draggable>
