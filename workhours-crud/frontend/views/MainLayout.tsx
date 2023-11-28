@@ -12,6 +12,7 @@ import {SideNavItem} from "@hilla/react-components/SideNavItem";
 import {Icon} from "@hilla/react-components/Icon";
 import {Avatar} from "@hilla/react-components/Avatar";
 import {ProgressBar} from "@hilla/react-components/ProgressBar";
+import FixedSideNavItem from "Frontend/components/FixedSideNavItem";
 
 const navLinkClasses = ({isActive}: any) => {
     return `block rounded-m p-s ${isActive ? 'bg-primary-10 text-primary' : 'text-body'}`;
@@ -83,29 +84,29 @@ export default function MainLayout() {
     return (
         <AppLayout primarySection="drawer">
             <SideNav slot={"drawer"}>
-                <SideNavItem path={"/"}>
+                <FixedSideNavItem path={"/"}>
                     <Icon icon={"vaadin:dashboard"} slot={"prefix"}/>
                     Dashboard
-                </SideNavItem>
-                <SideNavItem path={"/workhours"}>
+                </FixedSideNavItem>
+                <FixedSideNavItem path={"/workhours"}>
                     <Icon icon={"vaadin:calendar-clock"} slot={"prefix"}/>
                     Workhours
-                </SideNavItem>
+                </FixedSideNavItem>
                 {isManager && <SideNavItem>
                     <Icon icon={"vaadin:cog"} slot={"prefix"}/>
                     Administration
-                    <SideNavItem path={"/admin/projects"} slot={"children"}>
+                    <FixedSideNavItem path={"/admin/projects"} slot={"children"}>
                         <Icon icon={"vaadin:package"} slot={"prefix"}/>
                         Projects
-                    </SideNavItem>
-                    <SideNavItem path={"/admin/contracts"} slot={"children"}>
+                    </FixedSideNavItem>
+                    <FixedSideNavItem path={"/admin/contracts"} slot={"children"}>
                         <Icon icon={"vaadin:book-dollar"} slot={"prefix"}/>
                         Contracts
-                    </SideNavItem>
-                    <SideNavItem path={"/admin/hourcategories"} slot={"children"}>
+                    </FixedSideNavItem>
+                    <FixedSideNavItem path={"/admin/hourcategories"} slot={"children"}>
                         <Icon icon={"vaadin:tags"} slot={"prefix"}/>
                         Hour Categories
-                    </SideNavItem>
+                    </FixedSideNavItem>
                 </SideNavItem>}
             </SideNav>
 
