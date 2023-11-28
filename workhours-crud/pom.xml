@@ -12,7 +12,7 @@
 
     <properties>
         <java.version>17</java.version>
-        <hilla.version>2.5.0.alpha8</hilla.version>
+        <hilla.version>2.5.0.alpha9</hilla.version>
         <sso-kit.version>2.1.0</sso-kit.version>
         <keycloak-admin-client.version>21.1.1</keycloak-admin-client.version>
         <spring-modulith.version>1.0.2</spring-modulith.version>
