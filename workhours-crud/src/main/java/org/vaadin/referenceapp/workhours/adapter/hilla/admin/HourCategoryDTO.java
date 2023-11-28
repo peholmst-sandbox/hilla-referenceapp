@@ -8,7 +8,7 @@ import org.vaadin.referenceapp.workhours.domain.primitives.UserId;
 import java.time.Instant;
 import java.util.Optional;
 
-public record HourCategoryDTO(
+record HourCategoryDTO(
         @Nullable Long id,
         String name,
         @Nullable String createdBy,
@@ -17,7 +17,7 @@ public record HourCategoryDTO(
         @Nullable Instant modifiedOn
 ) {
 
-    public static HourCategoryDTO fromEntity(HourCategory entity) {
+    static HourCategoryDTO fromEntity(HourCategory entity) {
         return new HourCategoryDTO(
                 entity.nullSafeId(),
                 entity.getName(),
@@ -28,7 +28,7 @@ public record HourCategoryDTO(
         );
     }
 
-    public HourCategory toEntity(LookupFunction<Long, HourCategory> entityLookup) {
+    HourCategory toEntity(LookupFunction<Long, HourCategory> entityLookup) {
         var entity = Optional.ofNullable(id()).flatMap(entityLookup::findById).orElseGet(HourCategory::new);
         entity.setName(name());
         return entity;

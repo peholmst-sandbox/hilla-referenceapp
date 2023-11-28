@@ -29,6 +29,8 @@ import WorkLogEntryForm from "Frontend/views/worklog/WorkLogEntryForm";
 import {useForm} from "@hilla/react-form";
 import WorkLogEntryFormDTOModel
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/WorkLogEntryFormDTOModel";
+import EmployeeReference
+    from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/EmployeeReference";
 
 interface EntryLoader {
     isNew: boolean;
@@ -37,10 +39,15 @@ interface EntryLoader {
 }
 
 export default function WorkLogView() {
+    const [filterByEmployee, setFilterByEmployee] = useState<EmployeeReference | null>();
     const [filterByProject, setFilterByProject] = useState<ProjectReference | null>();
     const [filterByContract, setFilterByContract] = useState<ContractReference | null>();
     const [filterFrom, setFilterFrom] = useState<string>();
     const [filterTo, setFilterTo] = useState<string>();
+    const employees = useServiceQuery({
+        serviceFunction: ReferenceLookupService.findEmployees,
+        params: []
+    });
     const projects = useServiceQuery({
         serviceFunction: ReferenceLookupService.findProjects,
         params: []
@@ -63,6 +70,7 @@ export default function WorkLogView() {
     const dataProvider = useDataProvider({
         queryFunction: async (pageable) => {
             const {items, count} = await WorkLogQueryObject.find({
+                employee: nullToUndefined(filterByEmployee),
                 project: nullToUndefined(filterByProject),
                 contract: nullToUndefined(filterByContract),
                 fromDate: filterFrom,
@@ -71,7 +79,7 @@ export default function WorkLogView() {
             });
             return {items, count};
         },
-        deps: [filterByProject, filterByContract, filterFrom, filterTo]
+        deps: [filterByEmployee, filterByProject, filterByContract, filterFrom, filterTo]
     });
 
     const grid = useRef<GridElement<WorkLogQueryRecord>>(null);
@@ -133,6 +141,15 @@ export default function WorkLogView() {
                 <VerticalLayout theme={"spacing padding"} className={"w-full h-full overflow-hidden relative"}>
                     <HorizontalLayout theme={"spacing"} style={{flexWrap: "wrap"}}>
                         <ComboBox
+                            items={employees.data}
+                            placeholder={"Filter by Employee"}
+                            style={{flexGrow: 1}}
+                            itemLabelPath={"name"}
+                            clearButtonVisible={true}
+                            selectedItem={filterByEmployee}
+                            onSelectedItemChanged={e => setFilterByEmployee(e.detail.value)}
+                        />
+                        <ComboBox
                             items={projects.data}
                             placeholder={"Filter by Project"}
                             style={{flexGrow: 1}}
@@ -173,6 +190,7 @@ export default function WorkLogView() {
                               item ? editEntry(item) : hideDrawer();
                           }}
                           ref={grid}>
+                        <GridSortColumn path={"employee.name"} header={"Employee"} resizable/>
                         <GridSortColumn path={"project.name"} header={"Project"} resizable/>
                         <GridSortColumn path={"contract.name"} header={"Contract"} resizable/>
                         <GridSortColumn path={"date"} header={"Date"} resizable/>

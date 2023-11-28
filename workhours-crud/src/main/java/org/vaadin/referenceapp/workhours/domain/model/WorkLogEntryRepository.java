@@ -10,6 +10,8 @@ import java.time.ZonedDateTime;
 
 public interface WorkLogEntryRepository extends BaseRepository<WorkLogEntry, Long>, JpaSpecificationExecutor<WorkLogEntry> {
 
+    Sort.Order ORDER_BY_EMPLOYEE_FIRST_NAME = OrderBuilder.of(WorkLogEntry_.employee).then(Employee_.firstName).asc();
+    Sort.Order ORDER_BY_EMPLOYEE_LAST_NAME = OrderBuilder.of(WorkLogEntry_.employee).then(Employee_.lastName).asc();
     Sort.Order ORDER_BY_PROJECT_NAME = OrderBuilder.of(WorkLogEntry_.project).then(Project_.name).asc();
     Sort.Order ORDER_BY_CONTRACT_NAME = OrderBuilder.of(WorkLogEntry_.contract).then(Contract_.name).asc();
     Sort.Order ORDER_BY_START_TIME = OrderBuilder.of(WorkLogEntry_.startTime).desc();
@@ -20,6 +22,10 @@ public interface WorkLogEntryRepository extends BaseRepository<WorkLogEntry, Lon
 
     static Specification<WorkLogEntry> withContractId(long contractId) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get(WorkLogEntry_.contract).get(Contract_.id), contractId);
+    }
+
+    static Specification<WorkLogEntry> withEmployeeId(long employeeId) {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get(WorkLogEntry_.employee).get(Employee_.id), employeeId);
     }
 
     static Specification<WorkLogEntry> startingOnOrAfter(ZonedDateTime startTime) {

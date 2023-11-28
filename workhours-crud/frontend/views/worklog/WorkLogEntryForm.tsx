@@ -49,6 +49,10 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
         serviceFunction: async (contract?: ContractReference) => contract ? await ReferenceLookupService.findHourCategoriesByContract(contract) : [],
         params: [value.contract]
     });
+    const employees = useServiceQuery({
+        serviceFunction: ReferenceLookupService.findEmployees,
+        params: []
+    });
     const durationHelper = useServiceQuery({
         serviceFunction: async (date?: string, startTime?: string, endTime?: string) => {
             if (date && startTime && endTime) {
@@ -74,6 +78,7 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
 
     const projectField = useFormPart(model.project);
     const contractField = useFormPart(model.contract);
+    const employeeField = useFormPart(model.employee);
     const dateField = useFormPart(model.date);
     const startTimeField = useFormPart(model.startTime);
     const endTimeField = useFormPart(model.endTime);
@@ -82,6 +87,7 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
     useEffect(() => {
         projectField.addValidator(new NotNull({message: "Please select a project."}));
         contractField.addValidator(new NotNull({message: "Please add a contract."}));
+        employeeField.addValidator(new NotNull({message: "Please select an employee."}));
         dateField.addValidator(new NotBlank({message: "Please select a date."}));
         startTimeField.addValidator(new NotBlank({message: "Please enter a start time."}));
         endTimeField.addValidator(new NotBlank({message: "Please enter an end time."}));
@@ -105,6 +111,10 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
     }, [contracts.data]);
 
     useEffect(() => {
+        clearValueIfNotInList(employeeField, value.employee, employees.data, item => item.id);
+    }, [employees.data]);
+
+    useEffect(() => {
         clearValueIfNotInList(hourCategoryField, value.hourCategory, hourCategories.data, item => item.id);
     }, [hourCategories.data]);
 
@@ -118,6 +128,18 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
 
     return (
         <FormLayout responsiveSteps={responsiveSteps}>
+            <ComboBox
+                label={"Employee"}
+                items={employees.data}
+                itemLabelPath={"name"}
+                itemValuePath={"id"}
+                itemIdPath={"id"}
+                {...{colspan: 2}}
+                {...field(model.employee)}
+            />
+            <ErrorNotification message={"Error loading employees"}
+                               opened={employees.isError}
+                               onRetry={employees.retry}/>
             <ComboBox
                 label={"Project"}
                 items={projects.data}

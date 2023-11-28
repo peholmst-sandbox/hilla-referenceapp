@@ -25,6 +25,10 @@ public class WorkLogEntry extends BaseAuditedEntity<Long> {
     @ManyToOne(optional = false)
     private HourCategory hourCategory;
 
+    @JoinColumn(name = "employee_id", nullable = false)
+    @ManyToOne(optional = false)
+    private Employee employee;
+
     @Column(name = "start_time", nullable = false)
     private ZonedDateTime startTime;
 
@@ -63,6 +67,14 @@ public class WorkLogEntry extends BaseAuditedEntity<Long> {
 
     public void setHourCategory(HourCategory hourCategory) {
         this.hourCategory = hourCategory;
+    }
+
+    public Employee getEmployee() {
+        return employee;
+    }
+
+    public void setEmployee(Employee employee) {
+        this.employee = employee;
     }
 
     public ZonedDateTime getStartTime() {

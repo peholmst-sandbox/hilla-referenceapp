@@ -6,11 +6,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.vaadin.referenceapp.workhours.domain.model.ContractRepository;
 import org.vaadin.referenceapp.workhours.domain.model.HourCategoryRepository;
 import org.vaadin.referenceapp.workhours.domain.model.ProjectRepository;
+import org.vaadin.referenceapp.workhours.domain.security.Roles;
 
 import java.util.List;
 
 @BrowserCallable
-@RolesAllowed("ROLE_MANAGER") // TODO Replace with constant
+@RolesAllowed(Roles.MANAGER)
 class ContractAdminService {
 
     private final ContractRepository contractRepository;
@@ -25,15 +26,12 @@ class ContractAdminService {
         this.hourCategoryRepository = hourCategoryRepository;
     }
 
-    public List<ContractDTO> findAll() { // TODO Add pagination
+    public List<ContractDTO> findAll() {
         return contractRepository.findAllWithUpperLimit().map(ContractDTO::fromEntity).toList();
     }
 
     @Transactional
     public ContractDTO save(ContractDTO dto) {
-        if ("fail".equals(dto.name())) { // TODO Remove this
-            throw new UnsupportedOperationException("fail");
-        }
         return ContractDTO.fromEntity(contractRepository.saveAndFlush(dto.toEntity(
                 contractRepository::findAllById,
                 projectRepository::findAllById,

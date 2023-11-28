@@ -9,6 +9,7 @@ const WorkLogView = lazy(async () => import("Frontend/views/worklog/WorkLogView.
 const ProjectAdminView = lazy(async () => import("Frontend/views/admin/ProjectAdminView"));
 const ContractAdminView = lazy(async () => import("Frontend/views/admin/ContractAdminView"));
 const HourCategoryAdminView = lazy(async () => import("Frontend/views/admin/HourCategoryAdminView"));
+const EmployeeAdminView = lazy(async () => import("Frontend/views/admin/EmployeeAdminView"));
 const DashboardView = lazy(async () => import( "Frontend/views/dashboard/DashboardView"));
 
 export const routes: ViewRouteObject[] = protectRoutes([
@@ -33,6 +34,12 @@ export const routes: ViewRouteObject[] = protectRoutes([
                 path: '/admin/hourcategories',
                 element: <HourCategoryAdminView/>,
                 handle: {title: "Manage Hour Categories"},
+                requireAuthentication: true
+            },
+            {
+                path: '/admin/employees',
+                element: <EmployeeAdminView/>,
+                handle: {title: "Manage Employees"},
                 requireAuthentication: true
             },
             {

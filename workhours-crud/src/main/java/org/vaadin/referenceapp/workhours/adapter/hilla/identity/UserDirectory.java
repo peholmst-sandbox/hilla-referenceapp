@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.vaadin.referenceapp.workhours.domain.model.identity.UserDetailsRepository;
 import org.vaadin.referenceapp.workhours.domain.primitives.UserId;
 
+import java.util.List;
+
 @BrowserCallable
 @PermitAll
 @SuppressWarnings("unused") // Otherwise IntelliJ IDEA will complain
@@ -28,5 +30,12 @@ class UserDirectory {
                     log.debug("User not found: {}", userId);
                     return null;
                 });
+    }
+
+    public List<UserDetailsDTO> findByUsername(String username, boolean exactMatch) {
+        return userDetailsRepository.findByUsername(username, exactMatch)
+                .stream()
+                .map(UserDetailsDTO::fromEntity)
+                .toList();
     }
 }

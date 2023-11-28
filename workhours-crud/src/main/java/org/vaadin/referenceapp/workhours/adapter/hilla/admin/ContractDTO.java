@@ -13,7 +13,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
 
-public record ContractDTO(
+record ContractDTO(
         @Nullable Long id,
         String name,
         ProjectReference project,
@@ -24,7 +24,7 @@ public record ContractDTO(
         @Nullable Instant modifiedOn
 ) {
 
-    public static ContractDTO fromEntity(Contract entity) {
+    static ContractDTO fromEntity(Contract entity) {
         return new ContractDTO(
                 entity.nullSafeId(),
                 entity.getName(),
@@ -37,9 +37,9 @@ public record ContractDTO(
         );
     }
 
-    public Contract toEntity(LookupFunction<Long, Contract> contractLookup,
-                             LookupFunction<Long, Project> projectLookup,
-                             LookupFunction<Long, HourCategory> hourCategoryLookup) {
+    Contract toEntity(LookupFunction<Long, Contract> contractLookup,
+                      LookupFunction<Long, Project> projectLookup,
+                      LookupFunction<Long, HourCategory> hourCategoryLookup) {
         var entity = Optional.ofNullable(id()).flatMap(contractLookup::findById).orElseGet(Contract::new);
         entity.setProject(projectLookup.getById(project.id()));
         entity.setName(name());

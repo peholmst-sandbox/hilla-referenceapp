@@ -95,6 +95,10 @@ export default function MainLayout() {
                 {isManager && <SideNavItem>
                     <Icon icon={"vaadin:cog"} slot={"prefix"}/>
                     Administration
+                    <FixedSideNavItem path={"/admin/employees"} slot={"children"}>
+                        <Icon icon={"vaadin:users"} slot={"prefix"}/>
+                        Employees
+                    </FixedSideNavItem>
                     <FixedSideNavItem path={"/admin/projects"} slot={"children"}>
                         <Icon icon={"vaadin:package"} slot={"prefix"}/>
                         Projects

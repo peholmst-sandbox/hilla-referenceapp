@@ -3,13 +3,11 @@ package org.vaadin.referenceapp.workhours.adapter.hilla.worklog;
 
 import dev.hilla.Nullable;
 import org.vaadin.referenceapp.workhours.adapter.hilla.reference.ContractReference;
+import org.vaadin.referenceapp.workhours.adapter.hilla.reference.EmployeeReference;
 import org.vaadin.referenceapp.workhours.adapter.hilla.reference.HourCategoryReference;
 import org.vaadin.referenceapp.workhours.adapter.hilla.reference.ProjectReference;
 import org.vaadin.referenceapp.workhours.domain.base.LookupFunction;
-import org.vaadin.referenceapp.workhours.domain.model.Contract;
-import org.vaadin.referenceapp.workhours.domain.model.HourCategory;
-import org.vaadin.referenceapp.workhours.domain.model.Project;
-import org.vaadin.referenceapp.workhours.domain.model.WorkLogEntry;
+import org.vaadin.referenceapp.workhours.domain.model.*;
 import org.vaadin.referenceapp.workhours.domain.primitives.UserId;
 
 import java.time.*;
@@ -26,6 +24,7 @@ public record WorkLogEntryFormDTO(
         @Nullable Long id,
         @Nullable ProjectReference project,
         @Nullable ContractReference contract,
+        @Nullable EmployeeReference employee,
         @Nullable LocalDate date,
         @Nullable LocalTime startTime,
         @Nullable LocalTime endTime,
@@ -42,6 +41,7 @@ public record WorkLogEntryFormDTO(
                 entity.nullSafeId(),
                 ProjectReference.fromEntity(entity.getProject()),
                 ContractReference.fromEntity(entity.getContract()),
+                EmployeeReference.fromEntity(entity.getEmployee()),
                 entity.getStartTime().toLocalDate(),
                 entity.getStartTime().toLocalTime(),
                 entity.getEndTime().toLocalTime(),
@@ -57,10 +57,12 @@ public record WorkLogEntryFormDTO(
     public WorkLogEntry toEntity(LookupFunction<Long, WorkLogEntry> workLogEntryLookup,
                                  LookupFunction<Long, Project> projectLookup,
                                  LookupFunction<Long, Contract> contractLookup,
-                                 LookupFunction<Long, HourCategory> hourCategoryLookup) {
+                                 LookupFunction<Long, HourCategory> hourCategoryLookup,
+                                 LookupFunction<Long, Employee> employeeLookup) {
         requireNonNull(project(), "Project is required");
         requireNonNull(contract(), "Contract is required");
         requireNonNull(hourCategory(), "Hour category is required");
+        requireNonNull(employee(), "Employee is required");
         requireNonNull(date(), "Date is required");
         requireNonNull(startTime(), "Start time is required");
         requireNonNull(endTime(), "End time is required");
@@ -75,6 +77,7 @@ public record WorkLogEntryFormDTO(
         entity.setProject(projectLookup.getById(project().id()));
         entity.setContract(contractLookup.getById(contract().id()));
         entity.setHourCategory(hourCategoryLookup.getById(hourCategory().id()));
+        entity.setEmployee(employeeLookup.getById(employee().id()));
         entity.setStartTime(startTime);
         entity.setEndTime(endTime);
         entity.setDescription(description());

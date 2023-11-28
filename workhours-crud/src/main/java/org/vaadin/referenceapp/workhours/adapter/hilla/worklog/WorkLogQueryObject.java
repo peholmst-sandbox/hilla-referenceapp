@@ -7,29 +7,37 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.vaadin.referenceapp.workhours.domain.model.Employee;
+import org.vaadin.referenceapp.workhours.domain.model.EmployeeRepository;
 import org.vaadin.referenceapp.workhours.domain.model.WorkLogEntry;
 import org.vaadin.referenceapp.workhours.domain.model.WorkLogEntryRepository;
+import org.vaadin.referenceapp.workhours.domain.security.CurrentUser;
+import org.vaadin.referenceapp.workhours.domain.security.Roles;
 
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @BrowserCallable
-@RolesAllowed("ROLE_EMPLOYEE") // Replace with constant
+@RolesAllowed(Roles.EMPLOYEE)
 class WorkLogQueryObject {
 
-    private static final Map<String, Sort.Order> ORDERS = Map.of(
-            "project.name", WorkLogEntryRepository.ORDER_BY_PROJECT_NAME,
-            "contract.name", WorkLogEntryRepository.ORDER_BY_CONTRACT_NAME,
-            "date", WorkLogEntryRepository.ORDER_BY_START_TIME
+    private static final Map<String, List<Sort.Order>> ORDERS = Map.of(
+            "employee.name", List.of(WorkLogEntryRepository.ORDER_BY_EMPLOYEE_FIRST_NAME,
+                    WorkLogEntryRepository.ORDER_BY_EMPLOYEE_LAST_NAME),
+            "project.name", List.of(WorkLogEntryRepository.ORDER_BY_PROJECT_NAME),
+            "contract.name", List.of(WorkLogEntryRepository.ORDER_BY_CONTRACT_NAME),
+            "date", List.of(WorkLogEntryRepository.ORDER_BY_START_TIME)
     );
     private static final Sort.Order DEFAULT_ORDER = WorkLogEntryRepository.ORDER_BY_START_TIME;
 
     private final WorkLogEntryRepository workLogEntryRepository;
+    private final EmployeeRepository employeeRepository;
+    private final CurrentUser currentUser;
 
-    WorkLogQueryObject(WorkLogEntryRepository workLogEntryRepository) {
+    WorkLogQueryObject(WorkLogEntryRepository workLogEntryRepository,
+                       EmployeeRepository employeeRepository, CurrentUser currentUser) {
         this.workLogEntryRepository = workLogEntryRepository;
+        this.employeeRepository = employeeRepository;
+        this.currentUser = currentUser;
     }
 
     public WorkLogQueryResponse find(WorkLogQueryRequest request) {
@@ -49,10 +57,17 @@ class WorkLogQueryObject {
             specs.add(WorkLogEntryRepository.withContractId(request.contract().id()));
         }
         if (request.fromDate() != null) {
-            specs.add(WorkLogEntryRepository.startingOnOrAfter(request.fromDate().atStartOfDay(ZoneId.systemDefault()))); // TODO Use user's time zone
+            specs.add(WorkLogEntryRepository.startingOnOrAfter(request.fromDate().atStartOfDay(currentUser.timeZone())));
         }
         if (request.toDate() != null) {
-            specs.add(WorkLogEntryRepository.endingBefore(request.toDate().plusDays(1).atStartOfDay(ZoneId.systemDefault()))); // TODO Use user's time zone
+            specs.add(WorkLogEntryRepository.endingBefore(request.toDate().plusDays(1).atStartOfDay(currentUser.timeZone())));
+        }
+        if (currentUser.hasRole(Roles.MANAGER)) {
+            if (request.employee() != null) {
+                specs.add(WorkLogEntryRepository.withEmployeeId(request.employee().id()));
+            }
+        } else {
+            specs.add(WorkLogEntryRepository.withEmployeeId(employeeRepository.findByUser(currentUser.userId()).map(Employee::nullSafeId).orElse(-1L)));
         }
         return Specification.allOf(specs);
     }
@@ -66,8 +81,9 @@ class WorkLogQueryObject {
     private Sort sanitizeSort(Sort sort) {
         var sanitized = Sort.by(sort
                 .flatMap(incomingOrder ->
-                        Optional.ofNullable(ORDERS.get(incomingOrder.getProperty()))
-                                .map(outgoingOrder -> outgoingOrder.with(incomingOrder.getDirection())).stream())
+                        Optional.ofNullable(ORDERS.get(incomingOrder.getProperty())).orElse(Collections.emptyList())
+                                .stream()
+                                .map(outgoingOrder -> outgoingOrder.with(incomingOrder.getDirection())))
                 .toList());
         if (sanitized.isEmpty()) {
             return Sort.by(DEFAULT_ORDER);

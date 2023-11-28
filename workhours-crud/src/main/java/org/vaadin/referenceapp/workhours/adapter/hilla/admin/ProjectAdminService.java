@@ -4,11 +4,12 @@ import dev.hilla.BrowserCallable;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.transaction.annotation.Transactional;
 import org.vaadin.referenceapp.workhours.domain.model.ProjectRepository;
+import org.vaadin.referenceapp.workhours.domain.security.Roles;
 
 import java.util.List;
 
 @BrowserCallable
-@RolesAllowed("ROLE_MANAGER") // TODO Replace with constant
+@RolesAllowed(Roles.MANAGER)
 class ProjectAdminService {
 
     private final ProjectRepository projectRepository;
@@ -17,15 +18,12 @@ class ProjectAdminService {
         this.projectRepository = projectRepository;
     }
 
-    public List<ProjectDTO> findAll() { // TODO Add pagination
+    public List<ProjectDTO> findAll() {
         return projectRepository.findAllWithUpperLimit().map(ProjectDTO::fromEntity).toList();
     }
 
     @Transactional
     public ProjectDTO save(ProjectDTO dto) {
-        if ("fail".equals(dto.name())) { // TODO Remove this
-            throw new UnsupportedOperationException("fail");
-        }
         return ProjectDTO.fromEntity(projectRepository.saveAndFlush(dto.toEntity(projectRepository::findAllById)));
     }
 }
