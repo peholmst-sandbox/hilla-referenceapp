@@ -13,7 +13,7 @@ public class CurrentUser {
     CurrentUser() {
     }
 
-    public UserId userId() {
+    public UserId id() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {
             throw new AccessDeniedException("Authentication required");

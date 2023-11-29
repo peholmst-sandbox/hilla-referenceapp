@@ -59,7 +59,7 @@ class ReferenceLookupService {
                     .map(EmployeeReference::fromEntity)
                     .toList();
         } else {
-            return employeeRepository.findByUser(currentUser.userId())
+            return employeeRepository.findByUser(currentUser.id())
                     .map(EmployeeReference::fromEntity)
                     .stream()
                     .toList();

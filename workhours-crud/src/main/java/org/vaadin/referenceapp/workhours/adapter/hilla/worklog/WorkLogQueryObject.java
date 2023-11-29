@@ -67,7 +67,7 @@ class WorkLogQueryObject {
                 specs.add(WorkLogEntryRepository.withEmployeeId(request.employee().id()));
             }
         } else {
-            specs.add(WorkLogEntryRepository.withEmployeeId(employeeRepository.findByUser(currentUser.userId()).map(Employee::nullSafeId).orElse(-1L)));
+            specs.add(WorkLogEntryRepository.withEmployeeId(employeeRepository.findByUser(currentUser.id()).map(Employee::nullSafeId).orElse(-1L)));
         }
         return Specification.allOf(specs);
     }

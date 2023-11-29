@@ -26,19 +26,23 @@ import AuditingInformation from "Frontend/components/AuditingInformation";
 import SaveCancelButtons from "Frontend/components/SaveCancelButtons";
 import ErrorNotification from "Frontend/components/ErrorNotification";
 import WorkLogEntryForm from "Frontend/views/worklog/WorkLogEntryForm";
-import {useForm} from "@hilla/react-form";
+import {useForm, UseFormResult} from "@hilla/react-form";
 import WorkLogEntryFormDTOModel
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/worklog/WorkLogEntryFormDTOModel";
 import EmployeeReference
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/EmployeeReference";
+import {useSsoContext} from "@hilla/sso-kit-client-react";
 
 interface EntryLoader {
     isNew: boolean;
 
-    load(read?: (entry: WorkLogEntryFormDTO) => void, clear?: () => void): void;
+    load(form: UseFormResult<WorkLogEntryFormDTOModel>): void;
 }
 
 export default function WorkLogView() {
+    const ssoContext = useSsoContext();
+    const isManager = ssoContext.isUserInRole("MANAGER");
+
     const [filterByEmployee, setFilterByEmployee] = useState<EmployeeReference | null>();
     const [filterByProject, setFilterByProject] = useState<ProjectReference | null>();
     const [filterByContract, setFilterByContract] = useState<ContractReference | null>();
@@ -89,9 +93,10 @@ export default function WorkLogView() {
         onSubmit: save.callAsync
     })
 
+
     useEffect(() => {
         if (entry) {
-            entry.load(form.read, form.clear);
+            entry.load(form);
         } else {
             form.clear();
         }
@@ -100,8 +105,11 @@ export default function WorkLogView() {
     function addEntry() {
         setEntry({
             isNew: true,
-            load(clear: () => void) {
-                clear();
+            load(form: UseFormResult<WorkLogEntryFormDTOModel>) {
+                form.clear();
+                WorkLogService.ownEmployeeReference().then(employee => {
+                    form.value.employee = employee;
+                });
             }
         });
         setSelection([]);
@@ -116,8 +124,8 @@ export default function WorkLogView() {
         if (entry) {
             setEntry({
                 isNew: false,
-                load(read: (entry: WorkLogEntryFormDTO) => void) {
-                    read(entry);
+                load(form: UseFormResult<WorkLogEntryFormDTOModel>) {
+                    form.read(entry);
                 }
             });
         } else {
@@ -140,7 +148,8 @@ export default function WorkLogView() {
                 fallback={<WarningMessage message={"Worklog entry is not available offline."} className={"m-m"}/>}>
                 <VerticalLayout theme={"spacing padding"} className={"w-full h-full overflow-hidden relative"}>
                     <HorizontalLayout theme={"spacing"} style={{flexWrap: "wrap"}}>
-                        <ComboBox
+                        <Button theme={"primary"} style={{flexGrow: 1}} onClick={addEntry}>Add</Button>
+                        {isManager && (<ComboBox
                             items={employees.data}
                             placeholder={"Filter by Employee"}
                             style={{flexGrow: 1}}
@@ -148,7 +157,7 @@ export default function WorkLogView() {
                             clearButtonVisible={true}
                             selectedItem={filterByEmployee}
                             onSelectedItemChanged={e => setFilterByEmployee(e.detail.value)}
-                        />
+                        />)}
                         <ComboBox
                             items={projects.data}
                             placeholder={"Filter by Project"}
@@ -181,7 +190,6 @@ export default function WorkLogView() {
                             clearButtonVisible={true}
                             onValueChanged={e => setFilterTo(e.detail.value)}
                         />
-                        <Button theme={"primary"} style={{flexGrow: 1}} onClick={addEntry}>Add</Button>
                     </HorizontalLayout>
                     <Grid dataProvider={dataProvider}
                           selectedItems={selection}

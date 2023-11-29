@@ -4,6 +4,7 @@ import dev.hilla.BrowserCallable;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
+import org.vaadin.referenceapp.workhours.adapter.hilla.reference.EmployeeReference;
 import org.vaadin.referenceapp.workhours.domain.model.*;
 import org.vaadin.referenceapp.workhours.domain.security.CurrentUser;
 import org.vaadin.referenceapp.workhours.domain.security.Roles;
@@ -63,7 +64,7 @@ class WorkLogService {
     }
 
     private boolean hasAccessTo(WorkLogEntry workLogEntry) {
-        return currentUser.hasRole(Roles.MANAGER) || currentUser.userId().equals(workLogEntry.getEmployee().getUser());
+        return currentUser.hasRole(Roles.MANAGER) || currentUser.id().equals(workLogEntry.getEmployee().getUser());
     }
 
     public long calculateDurationInSecondsBetween(LocalDate date, LocalTime startTime, LocalTime endTime) {
@@ -76,5 +77,9 @@ class WorkLogService {
         var from = date.atTime(startTime).atZone(tz);
         var to = endDate.atTime(endTime).atZone(tz);
         return Duration.between(from, to).toSeconds();
+    }
+
+    public Optional<EmployeeReference> ownEmployeeReference() {
+        return employeeRepository.findByUser(currentUser.id()).map(EmployeeReference::fromEntity);
     }
 }

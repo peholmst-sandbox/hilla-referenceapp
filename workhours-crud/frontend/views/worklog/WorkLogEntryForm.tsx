@@ -19,6 +19,7 @@ import ProjectReference
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/ProjectReference";
 import ContractReference
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/ContractReference";
+import {useSsoContext} from "@hilla/sso-kit-client-react";
 
 interface TimeEntryFormProps {
     form: UseFormResult<WorkLogEntryFormDTOModel>;
@@ -34,7 +35,9 @@ function clearValueIfNotInList<T>(field: UseFormPartResult<any>, expectedValue: 
 }
 
 export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
-    console.debug("Rendering WorkLogEntryForm");
+    const ssoContext = useSsoContext();
+    const isManager = ssoContext.isUserInRole("MANAGER");
+
     const {model, value, field} = form;
 
     const projects = useServiceQuery({
@@ -136,6 +139,7 @@ export default function WorkLogEntryForm({form}: TimeEntryFormProps) {
                 itemIdPath={"id"}
                 {...{colspan: 2}}
                 {...field(model.employee)}
+                disabled={!isManager}
             />
             <ErrorNotification message={"Error loading employees"}
                                opened={employees.isError}
