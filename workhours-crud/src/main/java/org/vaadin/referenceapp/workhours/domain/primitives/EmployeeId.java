@@ -1,31 +1,21 @@
 package org.vaadin.referenceapp.workhours.domain.primitives;
 
-import java.io.Serializable;
-import java.util.Objects;
+public final class EmployeeId extends BaseLongId {
 
-public final class EmployeeId implements Serializable {
+    public static final EmployeeId NONE = new EmployeeId(-1L);
 
-    private final long id;
-
-    public EmployeeId(long id) {
-        this.id = id;
+    private EmployeeId(long id) {
+        super(id);
     }
 
-    @Override
-    public String toString() {
-        return "EmployeeId(" + id + ")";
+    public static EmployeeId fromLong(long employeeId) {
+        if (employeeId < 0) {
+            throw new IllegalArgumentException("EmployeeId must be positive");
+        }
+        return new EmployeeId(employeeId);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        EmployeeId that = (EmployeeId) o;
-        return id == that.id;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
+    public static EmployeeId fromString(String employeeId) {
+        return fromLong(Long.parseLong(employeeId, 10));
     }
 }

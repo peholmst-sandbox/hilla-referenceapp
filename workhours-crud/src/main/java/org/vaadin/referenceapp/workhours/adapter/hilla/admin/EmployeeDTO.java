@@ -3,6 +3,7 @@ package org.vaadin.referenceapp.workhours.adapter.hilla.admin;
 import dev.hilla.Nullable;
 import org.vaadin.referenceapp.workhours.domain.base.LookupFunction;
 import org.vaadin.referenceapp.workhours.domain.model.Employee;
+import org.vaadin.referenceapp.workhours.domain.primitives.EmployeeId;
 import org.vaadin.referenceapp.workhours.domain.primitives.UserId;
 
 import java.time.Instant;
@@ -21,7 +22,7 @@ record EmployeeDTO(
 
     static EmployeeDTO fromEntity(Employee entity) {
         return new EmployeeDTO(
-                entity.nullSafeId(),
+                entity.nullSafeId().toLong(),
                 entity.getFirstName(),
                 entity.getLastName(),
                 Optional.ofNullable(entity.getUser()).map(UserId::toString).orElse(null),
@@ -32,11 +33,11 @@ record EmployeeDTO(
         );
     }
 
-    Employee toEntity(LookupFunction<Long, Employee> entityLookup) {
-        var entity = Optional.ofNullable(id()).flatMap(entityLookup::findById).orElseGet(Employee::new);
+    Employee toEntity(LookupFunction<EmployeeId, Employee> entityLookup) {
+        var entity = Optional.ofNullable(id()).map(EmployeeId::fromLong).flatMap(entityLookup::findById).orElseGet(Employee::new);
         entity.setFirstName(firstName());
         entity.setLastName(lastName());
-        entity.setUser(UserId.fromString(user()));
+        entity.setUser(Optional.ofNullable(user()).map(UserId::fromString).orElse(null));
         return entity;
     }
 }

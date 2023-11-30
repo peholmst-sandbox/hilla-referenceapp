@@ -7,6 +7,9 @@ import org.vaadin.referenceapp.workhours.domain.base.LookupFunction;
 import org.vaadin.referenceapp.workhours.domain.model.Contract;
 import org.vaadin.referenceapp.workhours.domain.model.HourCategory;
 import org.vaadin.referenceapp.workhours.domain.model.Project;
+import org.vaadin.referenceapp.workhours.domain.primitives.ContractId;
+import org.vaadin.referenceapp.workhours.domain.primitives.HourCategoryId;
+import org.vaadin.referenceapp.workhours.domain.primitives.ProjectId;
 import org.vaadin.referenceapp.workhours.domain.primitives.UserId;
 
 import java.time.Instant;
@@ -26,7 +29,7 @@ record ContractDTO(
 
     static ContractDTO fromEntity(Contract entity) {
         return new ContractDTO(
-                entity.nullSafeId(),
+                entity.nullSafeId().toLong(),
                 entity.getName(),
                 ProjectReference.fromEntity(entity.getProject()),
                 HourCategoryReference.fromEntities(entity.getAllowedHourCategories()),
@@ -37,13 +40,13 @@ record ContractDTO(
         );
     }
 
-    Contract toEntity(LookupFunction<Long, Contract> contractLookup,
-                      LookupFunction<Long, Project> projectLookup,
-                      LookupFunction<Long, HourCategory> hourCategoryLookup) {
-        var entity = Optional.ofNullable(id()).flatMap(contractLookup::findById).orElseGet(Contract::new);
-        entity.setProject(projectLookup.getById(project.id()));
+    Contract toEntity(LookupFunction<ContractId, Contract> contractLookup,
+                      LookupFunction<ProjectId, Project> projectLookup,
+                      LookupFunction<HourCategoryId, HourCategory> hourCategoryLookup) {
+        var entity = Optional.ofNullable(id()).map(ContractId::fromLong).flatMap(contractLookup::findById).orElseGet(Contract::new);
+        entity.setProject(projectLookup.getById(project.projectId()));
         entity.setName(name());
-        entity.setAllowedHourCategories(hourCategoryLookup.findByReferences(allowedHourCategories(), HourCategoryReference::id));
+        entity.setAllowedHourCategories(hourCategoryLookup.findByReferences(allowedHourCategories(), HourCategoryReference::hourCategoryId));
         return entity;
     }
 }

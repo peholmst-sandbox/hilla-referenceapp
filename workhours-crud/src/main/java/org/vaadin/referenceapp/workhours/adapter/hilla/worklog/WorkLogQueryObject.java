@@ -11,6 +11,7 @@ import org.vaadin.referenceapp.workhours.domain.model.Employee;
 import org.vaadin.referenceapp.workhours.domain.model.EmployeeRepository;
 import org.vaadin.referenceapp.workhours.domain.model.WorkLogEntry;
 import org.vaadin.referenceapp.workhours.domain.model.WorkLogEntryRepository;
+import org.vaadin.referenceapp.workhours.domain.primitives.EmployeeId;
 import org.vaadin.referenceapp.workhours.domain.security.CurrentUser;
 import org.vaadin.referenceapp.workhours.domain.security.Roles;
 
@@ -51,10 +52,10 @@ class WorkLogQueryObject {
     private Specification<WorkLogEntry> toSpecification(WorkLogQueryRequest request) {
         var specs = new ArrayList<Specification<WorkLogEntry>>();
         if (request.project() != null) {
-            specs.add(WorkLogEntryRepository.withProjectId(request.project().id()));
+            specs.add(WorkLogEntryRepository.withProjectId(request.project().projectId()));
         }
         if (request.contract() != null) {
-            specs.add(WorkLogEntryRepository.withContractId(request.contract().id()));
+            specs.add(WorkLogEntryRepository.withContractId(request.contract().contractId()));
         }
         if (request.fromDate() != null) {
             specs.add(WorkLogEntryRepository.startingOnOrAfter(request.fromDate().atStartOfDay(currentUser.timeZone())));
@@ -64,10 +65,10 @@ class WorkLogQueryObject {
         }
         if (currentUser.hasRole(Roles.MANAGER)) {
             if (request.employee() != null) {
-                specs.add(WorkLogEntryRepository.withEmployeeId(request.employee().id()));
+                specs.add(WorkLogEntryRepository.withEmployeeId(request.employee().employeeId()));
             }
         } else {
-            specs.add(WorkLogEntryRepository.withEmployeeId(employeeRepository.findByUser(currentUser.id()).map(Employee::nullSafeId).orElse(-1L)));
+            specs.add(WorkLogEntryRepository.withEmployeeId(employeeRepository.findByUser(currentUser.id()).map(Employee::nullSafeId).orElse(EmployeeId.NONE)));
         }
         return Specification.allOf(specs);
     }

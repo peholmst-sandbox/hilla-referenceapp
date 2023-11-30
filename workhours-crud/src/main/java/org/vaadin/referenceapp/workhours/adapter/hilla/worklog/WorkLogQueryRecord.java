@@ -25,7 +25,7 @@ public record WorkLogQueryRecord(
 
     static WorkLogQueryRecord fromEntity(WorkLogEntry entity) {
         return new WorkLogQueryRecord(
-                entity.nullSafeId(),
+                entity.nullSafeId().toLong(),
                 EmployeeReference.fromEntity(entity.getEmployee()),
                 ProjectReference.fromEntity(entity.getProject()),
                 ContractReference.fromEntity(entity.getContract()),

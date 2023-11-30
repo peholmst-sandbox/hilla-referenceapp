@@ -8,7 +8,7 @@ import org.vaadin.referenceapp.workhours.adapter.hilla.reference.HourCategoryRef
 import org.vaadin.referenceapp.workhours.adapter.hilla.reference.ProjectReference;
 import org.vaadin.referenceapp.workhours.domain.base.LookupFunction;
 import org.vaadin.referenceapp.workhours.domain.model.*;
-import org.vaadin.referenceapp.workhours.domain.primitives.UserId;
+import org.vaadin.referenceapp.workhours.domain.primitives.*;
 
 import java.time.*;
 import java.util.Optional;
@@ -38,7 +38,7 @@ public record WorkLogEntryFormDTO(
 
     static WorkLogEntryFormDTO fromEntity(WorkLogEntry entity) {
         return new WorkLogEntryFormDTO(
-                entity.nullSafeId(),
+                entity.nullSafeId().toLong(),
                 ProjectReference.fromEntity(entity.getProject()),
                 ContractReference.fromEntity(entity.getContract()),
                 EmployeeReference.fromEntity(entity.getEmployee()),
@@ -54,11 +54,11 @@ public record WorkLogEntryFormDTO(
         );
     }
 
-    public WorkLogEntry toEntity(LookupFunction<Long, WorkLogEntry> workLogEntryLookup,
-                                 LookupFunction<Long, Project> projectLookup,
-                                 LookupFunction<Long, Contract> contractLookup,
-                                 LookupFunction<Long, HourCategory> hourCategoryLookup,
-                                 LookupFunction<Long, Employee> employeeLookup) {
+    public WorkLogEntry toEntity(LookupFunction<WorkLogEntryId, WorkLogEntry> workLogEntryLookup,
+                                 LookupFunction<ProjectId, Project> projectLookup,
+                                 LookupFunction<ContractId, Contract> contractLookup,
+                                 LookupFunction<HourCategoryId, HourCategory> hourCategoryLookup,
+                                 LookupFunction<EmployeeId, Employee> employeeLookup) {
         requireNonNull(project(), "Project is required");
         requireNonNull(contract(), "Contract is required");
         requireNonNull(hourCategory(), "Hour category is required");
@@ -67,17 +67,17 @@ public record WorkLogEntryFormDTO(
         requireNonNull(startTime(), "Start time is required");
         requireNonNull(endTime(), "End time is required");
 
-        var entity = Optional.ofNullable(id()).flatMap(workLogEntryLookup::findById).orElseGet(WorkLogEntry::new);
+        var entity = Optional.ofNullable(id()).map(WorkLogEntryId::fromLong).flatMap(workLogEntryLookup::findById).orElseGet(WorkLogEntry::new);
 
         var startTime = ZonedDateTime.of(date(), startTime(), ZoneId.systemDefault()); // TODO Use user's time zone
         var endTime = endTime().isBefore(startTime())
                 ? ZonedDateTime.of(date().plusDays(1), endTime(), ZoneId.systemDefault())
                 : ZonedDateTime.of(date(), endTime(), ZoneId.systemDefault());
 
-        entity.setProject(projectLookup.getById(project().id()));
-        entity.setContract(contractLookup.getById(contract().id()));
-        entity.setHourCategory(hourCategoryLookup.getById(hourCategory().id()));
-        entity.setEmployee(employeeLookup.getById(employee().id()));
+        entity.setProject(projectLookup.getById(project().projectId()));
+        entity.setContract(contractLookup.getById(contract().contractId()));
+        entity.setHourCategory(hourCategoryLookup.getById(hourCategory().hourCategoryId()));
+        entity.setEmployee(employeeLookup.getById(employee().employeeId()));
         entity.setStartTime(startTime);
         entity.setEndTime(endTime);
         entity.setDescription(description());

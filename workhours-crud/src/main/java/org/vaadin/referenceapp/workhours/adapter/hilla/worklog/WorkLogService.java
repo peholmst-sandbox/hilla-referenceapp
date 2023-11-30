@@ -6,6 +6,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
 import org.vaadin.referenceapp.workhours.adapter.hilla.reference.EmployeeReference;
 import org.vaadin.referenceapp.workhours.domain.model.*;
+import org.vaadin.referenceapp.workhours.domain.primitives.WorkLogEntryId;
 import org.vaadin.referenceapp.workhours.domain.security.CurrentUser;
 import org.vaadin.referenceapp.workhours.domain.security.Roles;
 
@@ -41,7 +42,7 @@ class WorkLogService {
     }
 
     public Optional<WorkLogEntryFormDTO> loadForm(long workLogEntryId) {
-        return workLogEntryRepository.findById(workLogEntryId).filter(this::hasAccessTo).map(WorkLogEntryFormDTO::fromEntity);
+        return workLogEntryRepository.findById(WorkLogEntryId.fromLong(workLogEntryId)).filter(this::hasAccessTo).map(WorkLogEntryFormDTO::fromEntity);
     }
 
     @Transactional
@@ -59,7 +60,7 @@ class WorkLogService {
         return WorkLogEntryFormDTO.fromEntity(entity);
     }
 
-    private List<WorkLogEntry> findEntriesByIdWithAccessCheck(Iterable<Long> ids) {
+    private List<WorkLogEntry> findEntriesByIdWithAccessCheck(Iterable<WorkLogEntryId> ids) {
         return workLogEntryRepository.findAllById(ids).stream().filter(this::hasAccessTo).toList();
     }
 

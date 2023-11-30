@@ -2,11 +2,12 @@ package org.vaadin.referenceapp.workhours.domain.model;
 
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.vaadin.referenceapp.workhours.domain.base.BaseRepository;
+import org.vaadin.referenceapp.workhours.domain.primitives.EmployeeId;
 import org.vaadin.referenceapp.workhours.domain.primitives.UserId;
 
 import java.util.Optional;
 
-public interface EmployeeRepository extends BaseRepository<Employee, Long> {
+public interface EmployeeRepository extends BaseRepository<Employee, EmployeeId> {
 
     Optional<Employee> findByUser(UserId user);
 

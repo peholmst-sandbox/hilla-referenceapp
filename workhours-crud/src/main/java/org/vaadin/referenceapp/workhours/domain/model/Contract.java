@@ -1,7 +1,12 @@
 package org.vaadin.referenceapp.workhours.domain.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JavaType;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.type.descriptor.jdbc.BigIntJdbcType;
 import org.vaadin.referenceapp.workhours.domain.base.BaseAuditedEntity;
+import org.vaadin.referenceapp.workhours.domain.primitives.ContractId;
+import org.vaadin.referenceapp.workhours.domain.primitives.hibernate.ContractIdJavaType;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -9,11 +14,13 @@ import java.util.Set;
 
 @Entity
 @Table(name = "contracts")
-public class Contract extends BaseAuditedEntity<Long> {
+public class Contract extends BaseAuditedEntity<ContractId> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @JavaType(ContractIdJavaType.class)
+    @JdbcType(BigIntJdbcType.class)
+    private ContractId id;
 
     @JoinColumn(name = "project_id", nullable = false)
     @ManyToOne(optional = false)
@@ -29,7 +36,7 @@ public class Contract extends BaseAuditedEntity<Long> {
     private Set<HourCategory> allowedHourCategories;
 
     @Override
-    public Long getId() {
+    public ContractId getId() {
         return id;
     }
 

@@ -1,17 +1,24 @@
 package org.vaadin.referenceapp.workhours.domain.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JavaType;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.type.descriptor.jdbc.BigIntJdbcType;
 import org.vaadin.referenceapp.workhours.domain.base.BaseAuditedEntity;
+import org.vaadin.referenceapp.workhours.domain.primitives.WorkLogEntryId;
+import org.vaadin.referenceapp.workhours.domain.primitives.hibernate.WorkLogEntryIdJavaType;
 
 import java.time.ZonedDateTime;
 
 @Entity
 @Table(name = "work_log_entries")
-public class WorkLogEntry extends BaseAuditedEntity<Long> {
+public class WorkLogEntry extends BaseAuditedEntity<WorkLogEntryId> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @JavaType(WorkLogEntryIdJavaType.class)
+    @JdbcType(BigIntJdbcType.class)
+    private WorkLogEntryId id;
 
     @JoinColumn(name = "project_id", nullable = false)
     @ManyToOne(optional = false)
@@ -39,7 +46,7 @@ public class WorkLogEntry extends BaseAuditedEntity<Long> {
     private String description;
 
     @Override
-    public Long getId() {
+    public WorkLogEntryId getId() {
         return id;
     }
 

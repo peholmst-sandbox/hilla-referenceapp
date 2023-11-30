@@ -36,14 +36,14 @@ class ReferenceLookupService {
     }
 
     public List<ContractReference> findContractsByProject(ProjectReference projectReference) {
-        return projectRepository.findById(projectReference.id()).stream()
+        return projectRepository.findById(projectReference.projectId()).stream()
                 .flatMap(project -> contractRepository.findByProject(project).stream())
                 .map(ContractReference::fromEntity)
                 .toList();
     }
 
     public List<HourCategoryReference> findHourCategoriesByContract(ContractReference contractReference) {
-        return contractRepository.findById(contractReference.id()).stream()
+        return contractRepository.findById(contractReference.contractId()).stream()
                 .flatMap(contract -> contract.getAllowedHourCategories().stream())
                 .map(HourCategoryReference::fromEntity)
                 .toList();
