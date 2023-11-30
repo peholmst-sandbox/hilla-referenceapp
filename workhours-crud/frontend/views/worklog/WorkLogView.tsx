@@ -32,6 +32,8 @@ import WorkLogEntryFormDTOModel
 import EmployeeReference
     from "Frontend/generated/org/vaadin/referenceapp/workhours/adapter/hilla/reference/EmployeeReference";
 import {useSsoContext} from "@hilla/sso-kit-client-react";
+import {Duration} from "Frontend/types/Duration";
+import {formatDuration} from "Frontend/i18n/DurationFormatter";
 
 interface EntryLoader {
     isNew: boolean;
@@ -202,7 +204,9 @@ export default function WorkLogView() {
                         <GridSortColumn path={"project.name"} header={"Project"} resizable/>
                         <GridSortColumn path={"contract.name"} header={"Contract"} resizable/>
                         <GridSortColumn path={"date"} header={"Date"} resizable/>
-                        <GridColumn path={"durationInSeconds"} header={"Duration"} resizable/>
+                        <GridColumn path={"durationInSeconds"} header={"Duration"} resizable>
+                            {value => formatDuration(Duration.ofSeconds(value.item.durationInSeconds))}
+                        </GridColumn>
                         <GridColumn path={"description"} header={"Description"} resizable/>
                         <GridColumn path={"hourCategory.name"} header={"Hour Category"} resizable/>
                     </Grid>
